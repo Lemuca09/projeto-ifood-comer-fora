@@ -1,0 +1,77 @@
+@import "../styles/tokens.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  color: var(--ifdl-color-text-primary);
+  background: var(--ifdl-color-background-page);
+  font-family: var(--ifdl-font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer components {
+  .if-shell {
+    @apply mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 pb-10 sm:px-6 lg:px-8;
+  }
+
+  .if-header {
+    @apply sticky top-0 z-20 -mx-4 mb-6 border-b border-[var(--ifdl-color-border)] px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8;
+    background-color: color-mix(
+      in srgb,
+      var(--ifdl-color-background-elevated) 95%,
+      transparent
+    );
+  }
+
+  .if-card {
+    @apply overflow-hidden rounded-[var(--ifdl-radius-lg)] border border-[var(--ifdl-color-border)] bg-[var(--ifdl-color-background-elevated)] shadow-[var(--ifdl-shadow-card)];
+  }
+
+  .if-btn-primary {
+    @apply inline-flex items-center justify-center rounded-[var(--ifdl-radius-md)] bg-[var(--ifdl-color-brand-primary)] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[var(--ifdl-color-brand-primary-dark)] disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .if-btn-secondary {
+    @apply inline-flex items-center justify-center rounded-[var(--ifdl-radius-md)] border border-[var(--ifdl-color-border)] bg-white px-4 py-2.5 text-sm font-bold text-[var(--ifdl-color-text-primary)] transition hover:bg-neutral-50 disabled:opacity-50;
+  }
+
+  .if-chip {
+    @apply inline-flex shrink-0 items-center gap-1 rounded-[var(--ifdl-radius-pill)] border border-[var(--ifdl-color-border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--ifdl-color-text-primary)] transition;
+  }
+
+  .if-chip-active {
+    @apply border-[var(--ifdl-color-brand-primary)] bg-[var(--ifdl-color-brand-primary-soft)] text-[var(--ifdl-color-brand-primary)];
+  }
+
+  .if-input {
+    @apply w-full rounded-[var(--ifdl-radius-md)] border border-[var(--ifdl-color-border)] bg-white px-3 py-2.5 text-sm text-[var(--ifdl-color-text-primary)] outline-none ring-[var(--ifdl-color-brand-primary)] focus:ring-2;
+  }
+
+  .if-label {
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--ifdl-color-text-secondary)];
+  }
+
+  .synth-badge {
+    @apply inline-flex items-center rounded-[var(--ifdl-radius-pill)] bg-neutral-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--ifdl-color-text-secondary)];
+  }
+
+  /* Bottom nav só no mobile / DevTools phone */
+  .if-bottom-nav {
+    @apply fixed bottom-0 left-0 right-0 z-30 flex justify-around border-t border-[var(--ifdl-color-border)] bg-white px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 md:hidden;
+  }
+
+  .if-nav-item {
+    @apply flex flex-1 flex-col items-center gap-0.5 rounded-lg px-2 py-1 text-[11px] font-semibold text-[var(--ifdl-color-text-secondary)];
+  }
+
+  .if-nav-item-active {
+    @apply text-[var(--ifdl-color-brand-primary)];
+  }
+}

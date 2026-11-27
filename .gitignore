@@ -1,0 +1,58 @@
+# —— Segredos e ambiente (AGENTS §9) ——
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*.json
+**/secrets/**
+
+# —— Dependências e build ——
+node_modules/
+.next/
+out/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# —— Logs e cache ——
+*.log
+npm-debug.log*
+.npm
+.turbo
+.cache/
+
+# —— SO / IDE / Cursor (não necessários para rodar) ——
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+.cursor/
+.cursor-*/**
+
+# —— Material de case / agente (não necessários para o app) ——
+docs/
+contexto/
+evals/tmp/
+*.canvas.tsx
+**/agent-transcripts/
+**/terminals/
+
+# —— Supabase local (CLI); migrations e seed DEVEM ir ao repo ——
+supabase/.branches
+supabase/.temp
+
+# —— Python / artefatos locais ——
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# —— Testes / artefatos ——
+playwright-report/
+test-results/
+.vercel

@@ -1,0 +1,26 @@
+{
+  "rubric": {
+    "schemaValidAccepted": 1.0,
+    "unknownIdsDisplayed": 0,
+    "qualityMin": 0.7,
+    "definedBeforeRun": true
+  },
+  "cases": [
+    { "id": "n1", "type": "normal", "input": { "occasion": "jantar_a_dois", "neighborhood": "Gonzaga", "partySize": 2 }, "expect": "ranked_or_fallback" },
+    { "id": "n2", "type": "normal", "input": { "occasion": "rapido", "neighborhood": "Embaré", "partySize": 1 }, "expect": "ranked_or_fallback" },
+    { "id": "n3", "type": "normal", "input": { "occasion": "grupo", "neighborhood": "Boqueirão", "partySize": 4 }, "expect": "ranked_or_fallback" },
+    { "id": "n4", "type": "normal", "input": { "occasion": "familia", "neighborhood": "Aparecida", "partySize": 3 }, "expect": "ranked_or_fallback" },
+    { "id": "n5", "type": "normal", "input": { "occasion": "especial", "neighborhood": "Ponta da Praia", "partySize": 2 }, "expect": "ranked_or_fallback" },
+    { "id": "a1", "type": "ambiguous", "input": { "occasion": "rapido", "neighborhood": "Gonzaga", "partySize": 2, "preferredPriceRange": 1 }, "expect": "ids_in_candidates" },
+    { "id": "a2", "type": "ambiguous", "input": { "occasion": "grupo", "neighborhood": "Gonzaga", "partySize": 8 }, "expect": "ranked_or_empty" },
+    { "id": "a3", "type": "ambiguous", "input": { "occasion": "especial", "neighborhood": "Boqueirão", "partySize": 2, "preferredPriceRange": 1 }, "expect": "ids_in_candidates" },
+    { "id": "e1", "type": "empty", "mockOutput": { "recommendations": [] }, "expect": "fallback" },
+    { "id": "e2", "type": "empty", "mockOutput": {}, "expect": "fallback" },
+    { "id": "e3", "type": "empty", "mockOutput": null, "expect": "fallback" },
+    { "id": "adv1", "type": "adversarial", "mockOutput": { "recommendations": [{ "restaurant_id": "00000000-0000-0000-0000-000000000099", "codigoMotivo": "GOOD_MATCH" }] }, "expect": "fallback" },
+    { "id": "adv2", "type": "adversarial", "mockOutput": { "recommendations": [{ "restaurant_id": "11111111-1111-1111-1111-111111111101", "codigoMotivo": "HACKED" }] }, "expect": "fallback" },
+    { "id": "adv3", "type": "adversarial", "mockRaw": "{\"recommendations\":[{\"restaurant_id\":\"11111111-1111-1111-1111-111111111101\",\"codigoMotivo\":\"GOOD_MATCH\",\"preco\":\"grátis\"}]}", "expect": "fallback" },
+    { "id": "adv4", "type": "adversarial", "mockRaw": "<script>alert(1)</script>", "expect": "fallback" },
+    { "id": "adv5", "type": "adversarial", "mockRaw": "{\"recommendations\":[{\"restaurant_id\":\"11111111-1111-1111-1111-111111111101\",\"codigoMotivo\":\"GOOD_MATCH\"},{\"restaurant_id\":\"11111111-1111-1111-1111-111111111101\",\"codigoMotivo\":\"NEARBY\"}]}", "expect": "fallback" }
+  ]
+}

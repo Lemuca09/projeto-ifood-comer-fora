@@ -1,0 +1,47 @@
+import type { REASON_CODES } from "@/lib/constants";
+
+export type ReasonCode = (typeof REASON_CODES)[number];
+
+export type RestaurantRow = {
+  id: string;
+  name: string;
+  description: string | null;
+  neighborhood: string;
+  address: string;
+  price_range: number;
+  occasion_tags: string[];
+  is_active: boolean;
+  is_synthetic: boolean;
+};
+
+export type SlotRow = {
+  id: string;
+  restaurant_id: string;
+  starts_at: string;
+  capacity: number;
+  reserved_count: number;
+};
+
+export type EligibleRestaurant = RestaurantRow & {
+  slots: SlotRow[];
+  remaining: number;
+};
+
+export type RankedItem = {
+  restaurant_id: string;
+  reason_code: ReasonCode;
+  rank: number;
+};
+
+export type DiscoveryResult = {
+  discoveryId: string;
+  recommendationId: string;
+  isFallback: boolean;
+  items: Array<{
+    rank: number;
+    reason_code: ReasonCode;
+    reason_label: string;
+    restaurant: RestaurantRow;
+    next_slot: SlotRow | null;
+  }>;
+};
