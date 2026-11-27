@@ -1,21 +1,8 @@
 import type { Metadata } from "next";
-import { Nunito, Nunito_Sans } from "next/font/google";
 import { AppShell } from "@/components/AppShell";
 import { AnalyticsDashboardProvider } from "@/context/AnalyticsDashboardContext";
 import { DemoSessionProvider } from "@/context/DemoSessionContext";
 import "./globals.css";
-
-const title = Nunito({
-  subsets: ["latin"],
-  weight: ["700", "800", "900"],
-  variable: "--font-title",
-});
-
-const body = Nunito_Sans({
-  subsets: ["latin"],
-  weight: ["400", "600", "700"],
-  variable: "--font-body",
-});
 
 export const metadata: Metadata = {
   title: "Comer Fora · Pra Hoje",
@@ -30,7 +17,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className={`${title.variable} ${body.variable} font-body antialiased`}>
+      {/* next/font/google falha no build Vercel (loader null) — link CSS é estável */}
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossOrigin="anonymous"
+      />
+      {/* eslint-disable-next-line @next/next/no-page-custom-font -- next/font/google quebra no build Vercel */}
+      <link
+        href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Nunito+Sans:wght@400;600;700&display=swap"
+        rel="stylesheet"
+      />
+      <body className="font-body antialiased">
         <DemoSessionProvider>
           <AnalyticsDashboardProvider>
             <AppShell>{children}</AppShell>
