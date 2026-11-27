@@ -42,9 +42,8 @@ evals/tmp/
 **/agent-transcripts/
 **/terminals/
 
-# —— Supabase local (CLI); migrations e seed DEVEM ir ao repo ——
-supabase/.branches
-supabase/.temp
+# —— Supabase: schema/seed locais; não necessários para rodar na Vercel ——
+supabase/
 
 # —— Python / artefatos locais ——
 __pycache__/

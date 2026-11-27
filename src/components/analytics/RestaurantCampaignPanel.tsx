@@ -45,8 +45,8 @@ export function RestaurantCampaignPanel() {
           Plano para restaurantes parceiros
         </h2>
         <p className="mt-1 text-xs text-muted">
-          Melhor incentivo por bairro, cruzando horário fraco do salão com o
-          tipo de cliente da região
+          Melhor incentivo por restaurante parceiro, cruzando horário fraco do
+          salão com o tipo de cliente da região
         </p>
       </div>
 
@@ -65,7 +65,7 @@ export function RestaurantCampaignPanel() {
             <tbody>
               {dash.restaurants.map((r) => (
                 <tr
-                  key={r.name}
+                  key={r.id}
                   className="border-b border-[var(--ifdl-color-border)]"
                 >
                   <td className="py-2 pr-2 font-bold">

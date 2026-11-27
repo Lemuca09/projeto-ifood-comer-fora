@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildAnalyticsDashboard } from "@/services/analyticsEngine";
+import { listRestaurants } from "@/services/restaurants";
 import { userIndividualCopy } from "@/ai/analyticsGemini";
 import type { SyntheticUser } from "@/domain/personas";
 import { readJsonBody } from "@/lib/http";
@@ -24,8 +25,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "dados inválidos" }, { status: 400 });
     }
     const admin = createAdminClient();
-    const { data } = await admin.from("synthetic_users").select("*");
-    const dash = buildAnalyticsDashboard((data ?? []) as SyntheticUser[], parsed.data.seed);
+    const [{ data }, catalog] = await Promise.all([
+      admin.from("synthetic_users").select("*"),
+      listRestaurants(admin),
+    ]);
+    const dash = buildAnalyticsDashboard(
+      (data ?? []) as SyntheticUser[],
+      parsed.data.seed,
+      catalog,
+    );
     const user = dash.users.find((u) => u.id === parsed.data.userId);
     if (!user) return NextResponse.json({ error: "usuário não encontrado" }, { status: 404 });
 

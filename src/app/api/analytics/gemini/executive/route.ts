@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildAnalyticsDashboard } from "@/services/analyticsEngine";
+import { listRestaurants } from "@/services/restaurants";
 import { executiveBrief } from "@/ai/analyticsGemini";
 import type { SyntheticUser } from "@/domain/personas";
 import { readJsonBody } from "@/lib/http";
@@ -23,8 +24,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "seed inválido" }, { status: 400 });
     }
     const admin = createAdminClient();
-    const { data } = await admin.from("synthetic_users").select("*");
-    const dash = buildAnalyticsDashboard((data ?? []) as SyntheticUser[], parsed.data.seed);
+    const [{ data }, catalog] = await Promise.all([
+      admin.from("synthetic_users").select("*"),
+      listRestaurants(admin),
+    ]);
+    const dash = buildAnalyticsDashboard(
+      (data ?? []) as SyntheticUser[],
+      parsed.data.seed,
+      catalog,
+    );
 
     let useAi = parsed.data.useAi === true;
     if (useAi) {

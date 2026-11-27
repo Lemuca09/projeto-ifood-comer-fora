@@ -119,13 +119,21 @@ export async function restaurantCampaignPlan(
   neighborhood: string,
   opts?: { useAi?: boolean },
 ) {
-  const local = dash.restaurants.find((r) => r.neighborhood === neighborhood);
+  const locals = dash.restaurants.filter(
+    (r) => r.neighborhood === neighborhood,
+  );
+  const local =
+    locals.sort((a, b) => b.strategyRoi - a.strategyRoi)[0] ??
+    dash.restaurants[0];
+  const restaurantNames = locals.map((r) => r.name).join(", ") || neighborhood;
   const fallback = {
     beneficio:
       local?.strategy ??
       "Cupom no horário fraco, giftback na 1ª visita ou campanha sem desconto",
     horarioIdeal: "Terça e quarta 15h–17h / domingo 18h–19h",
-    publicoAlvo: "Cruzar grupos próximos com ociosidade do salão",
+    publicoAlvo: `Parceiros em ${neighborhood}${
+      locals.length ? ` (${restaurantNames})` : ""
+    } · cruzar clusters com ociosidade do salão`,
     projecaoReceitaPct: local?.deltaPct ?? dash.kpis.lowDemandLiftPct,
     roteiro:
       local?.strategyReason ??
@@ -137,8 +145,9 @@ export async function restaurantCampaignPlan(
   const text = await callGeminiJson(
     `Consultor B2B iFood Comer Fora. Escolha a estratégia MAIS EFICIENTE (cupom, giftback, prato grátis ou sem desconto).
 JSON keys: beneficio, horarioIdeal, publicoAlvo, projecaoReceitaPct (number), roteiro.
-Bairro ${neighborhood}. Restaurante local ${JSON.stringify(local ?? null)}. Clusters ${JSON.stringify(dash.clusters)}. Mix ${JSON.stringify(dash.strategyMix)}.`,
-    ["campaign", dash.seed, neighborhood, local?.strategyRoi],
+Bairro ${neighborhood}. Restaurantes parceiros: ${restaurantNames}.
+Referência principal ${JSON.stringify(local ?? null)}. Clusters ${JSON.stringify(dash.clusters)}. Mix ${JSON.stringify(dash.strategyMix)}.`,
+    ["campaign", dash.seed, neighborhood, local?.strategyRoi, local?.name],
   );
   if (!text) return fallback;
   try {

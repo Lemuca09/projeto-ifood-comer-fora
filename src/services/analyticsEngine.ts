@@ -23,6 +23,7 @@ import {
   buildFeatureImpactReport,
   type FeatureImpactReport,
 } from "@/domain/analytics/featureImpact";
+import type { CatalogRestaurant } from "@/services/restaurants";
 
 export type EnrichedUser = {
   id: string;
@@ -98,8 +99,10 @@ export type DashboardPayload = {
     redemptionRate: number;
   };
   restaurants: Array<{
+    id: string;
     name: string;
     neighborhood: string;
+    priceRange: number;
     gmvBefore: number;
     gmvAfter: number;
     deltaPct: number;
@@ -132,6 +135,23 @@ function unitNoise(seed: number, key: string): number {
     h = Math.imul(h ^ key.charCodeAt(i), 2654435761);
   }
   return ((h >>> 0) % 10_000) / 10_000;
+}
+
+/** Até 2 restaurantes por bairro, a partir do catálogo do banco. */
+function pickPartnerRestaurants(
+  catalog: CatalogRestaurant[],
+  perNeighborhood = 2,
+): CatalogRestaurant[] {
+  const byHood = new Map<string, CatalogRestaurant[]>();
+  for (const r of catalog) {
+    if (!r.is_active) continue;
+    const list = byHood.get(r.neighborhood) ?? [];
+    if (list.length < perNeighborhood) {
+      list.push(r);
+      byHood.set(r.neighborhood, list);
+    }
+  }
+  return Array.from(byHood.values()).flat();
 }
 
 const CUISINES = ["Japonesa", "Brasileira", "Italiana", "Hambúrguer", "Árabe", "Vegetariana"];
@@ -239,6 +259,7 @@ function enrichFromPersona(u: SyntheticUser, rnd: () => number): Omit<
 export function buildAnalyticsDashboard(
   personas: SyntheticUser[],
   seed: number,
+  catalogRestaurants: CatalogRestaurant[] = [],
 ): DashboardPayload {
   const rnd = mulberry32(seed);
   const base = personas.map((u) => enrichFromPersona(u, rnd));
@@ -380,16 +401,24 @@ export function buildAnalyticsDashboard(
     userSharePct: c.userSharePct,
   }));
 
-  const neighborhoods = ["Gonzaga", "Boqueirão", "Ponta da Praia", "Embaré", "Aparecida"];
-  const restaurants = neighborhoods.map((n, i) => {
-    const before = 8000 + i * 1200 + rnd() * 900;
-    const idlePct = Number((0.28 + rnd() * 0.45).toFixed(2));
+  /** Parceiros: registros reais do banco (até 2 por bairro). Sem nomes inventados. */
+  const partnerCatalog = pickPartnerRestaurants(catalogRestaurants);
+  const restaurants = partnerCatalog.map((rest, i) => {
+    const priceRange = rest.price_range || 2;
+    const before = 7200 + i * 850 + rnd() * 1100 + priceRange * 400;
+    const idleFromDb =
+      typeof rest.idle_capacity_pct === "number"
+        ? Math.min(0.95, Math.max(0.05, rest.idle_capacity_pct / 100))
+        : null;
+    const idlePct = Number(
+      (idleFromDb ?? 0.28 + rnd() * 0.45).toFixed(2),
+    );
     const lowDemandDeltaPct = Number((12 + rnd() * 18).toFixed(1));
     const sampleDish =
       users[Math.floor(rnd() * users.length)]?.favoriteDishes[0] ??
       pickFavoriteDishes(CUISINES[i % CUISINES.length], rnd, 1)[0];
     const restStrategy = pickEfficientRestaurantStrategy({
-      neighborhood: n,
+      neighborhood: rest.neighborhood,
       lowDemandDeltaPct,
       idlePct,
       nearbyClusterMix: clusterMix,
@@ -404,8 +433,10 @@ export function buildAnalyticsDashboard(
           restStrategy.expectedLift * (0.85 + rnd() * 0.3),
         ));
     return {
-      name: `Restaurante Demo ${n}`,
-      neighborhood: n,
+      id: rest.id,
+      name: rest.name,
+      neighborhood: rest.neighborhood,
+      priceRange,
       gmvBefore: Number(before.toFixed(2)),
       gmvAfter: Number(after.toFixed(2)),
       deltaPct: Number((((after - before) / before) * 100).toFixed(1)),
@@ -481,7 +512,10 @@ export function buildAnalyticsDashboard(
       gmvDeltaPct: Number((((gmvAfter - gmvBefore) / (gmvBefore || 1)) * 100).toFixed(1)),
       lowDemandLiftPct: Number(
         (
-          restaurants.reduce((s, r) => s + r.lowDemandDeltaPct, 0) / restaurants.length
+          restaurants.length
+            ? restaurants.reduce((s, r) => s + r.lowDemandDeltaPct, 0) /
+              restaurants.length
+            : 0
         ).toFixed(1),
       ),
       newComerForaUsers,

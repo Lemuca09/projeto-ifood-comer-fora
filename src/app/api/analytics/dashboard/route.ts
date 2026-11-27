@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildAnalyticsDashboard } from "@/services/analyticsEngine";
+import { listRestaurants } from "@/services/restaurants";
 import type { SyntheticUser } from "@/domain/personas";
 import { assertSameOrigin } from "@/guardrails/csrf";
 
@@ -9,9 +10,16 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const seed = Number(url.searchParams.get("seed") ?? Date.now() % 1_000_000);
     const admin = createAdminClient();
-    const { data, error } = await admin.from("synthetic_users").select("*");
+    const [{ data, error }, catalog] = await Promise.all([
+      admin.from("synthetic_users").select("*"),
+      listRestaurants(admin),
+    ]);
     if (error) throw error;
-    const dash = buildAnalyticsDashboard((data ?? []) as SyntheticUser[], seed);
+    const dash = buildAnalyticsDashboard(
+      (data ?? []) as SyntheticUser[],
+      seed,
+      catalog,
+    );
     return NextResponse.json(dash);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Erro interno";
@@ -28,9 +36,16 @@ export async function POST(request: Request) {
     const body = (await request.json().catch(() => ({}))) as { seed?: number };
     const seed = body.seed ?? (Date.now() % 1_000_000);
     const admin = createAdminClient();
-    const { data, error } = await admin.from("synthetic_users").select("*");
+    const [{ data, error }, catalog] = await Promise.all([
+      admin.from("synthetic_users").select("*"),
+      listRestaurants(admin),
+    ]);
     if (error) throw error;
-    const dash = buildAnalyticsDashboard((data ?? []) as SyntheticUser[], seed);
+    const dash = buildAnalyticsDashboard(
+      (data ?? []) as SyntheticUser[],
+      seed,
+      catalog,
+    );
     return NextResponse.json(dash);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Erro interno";
