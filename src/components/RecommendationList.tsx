@@ -20,13 +20,7 @@ type ReserveTarget = {
   neighborhood: string;
 };
 
-export function RecommendationList({
-  data,
-  partySize: _partySize,
-}: {
-  data: DiscoveryResult;
-  partySize: number;
-}) {
+export function RecommendationList({ data }: { data: DiscoveryResult }) {
   const { data: session } = useDemoSession();
   const { dash } = useAnalyticsDashboard();
   const [reserveTarget, setReserveTarget] = useState<ReserveTarget | null>(null);

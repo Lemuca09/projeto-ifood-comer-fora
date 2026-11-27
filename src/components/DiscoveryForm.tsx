@@ -239,7 +239,7 @@ export function DiscoveryForm() {
             </div>
           )}
           {resultData && (
-            <RecommendationList data={resultData} partySize={partySize} />
+            <RecommendationList data={resultData} />
           )}
         </div>
       </div>
