@@ -43,7 +43,6 @@ export function ReserveConfirmSheet({
   restaurantId,
   restaurantName,
   neighborhood,
-  preferredNeighborhood: _preferredNeighborhood,
   benefit,
   prefersQuietBenefits = false,
   onClose,

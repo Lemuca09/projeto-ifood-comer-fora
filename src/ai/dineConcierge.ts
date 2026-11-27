@@ -156,7 +156,10 @@ export function buildGroundRestaurants(
   return mapped
     .sort((a, b) => b._score - a._score)
     .slice(0, limit)
-    .map(({ _score: _, ...rest }) => rest);
+    .map(({ _score, ...rest }) => {
+      void _score;
+      return rest;
+    });
 }
 
 function benefitPayload(input: DiscoveryInput, partySize: number) {
