@@ -12,7 +12,7 @@ import {
   requiredCheckIns,
 } from "@/domain/dineOut/progressiveBenefit";
 
-/** Subconjunto da persona enriquecida — evita import circular com analyticsEngine. */
+/** Subconjunto da persona enriquecida - evita import circular com analyticsEngine. */
 export type FeatureImpactUser = {
   id: string;
   archetype: string;
@@ -36,7 +36,9 @@ export type FeatureImpactId =
   | "pre_order"
   | "digital_tab"
   | "split_bill"
-  | "progressive_benefit";
+  | "progressive_benefit"
+  | "local_experiences"
+  | "dine_concierge";
 
 export type FeatureScenarioKpis = {
   visitRate: number;
@@ -453,23 +455,121 @@ export function buildFeatureImpactReport(
     };
   }
 
+  function localExperiencesOff(u: FeatureImpactUser) {
+    const p = baselineVisitProb(u, ctx);
+    const t = ticketBrl(u, ctx);
+    // Sem curadoria editorial: descoberta só por lista/ranking genérico
+    const culturalVisit =
+      0.22 +
+      (u.comerForaVisits90d === 0 ? 0.04 : 0.1) +
+      userNoise(ctx, u.id, "expOff") * 0.05;
+    return {
+      p,
+      ticket: t,
+      margin: t * marginRate(u),
+      cost: 0,
+      primary: clamp01(culturalVisit) * 100,
+    };
+  }
+
+  function localExperiencesOn(u: FeatureImpactUser) {
+    const off = localExperiencesOff(u);
+    const lift =
+      (0.05 +
+        (u.archetype === "indecisive_explorer" ? 0.07 : 0.03) +
+        (u.comerForaVisits90d <= 1 ? 0.04 : 0.02) +
+        userNoise(ctx, u.id, "expLift") * 0.03) *
+      ampPay;
+    const p = clamp01(off.p + lift);
+    const ticket = off.ticket * (1.02 + userNoise(ctx, u.id, "expT") * 0.03);
+    const culturalVisit = clamp01(
+      off.primary / 100 +
+        0.18 +
+        (u.archetype === "indecisive_explorer" ? 0.05 : 0.02) +
+        userNoise(ctx, u.id, "expOn") * 0.04,
+    );
+    // Custo editorial baixo (slots reais já existem; copy é curadoria)
+    const cost = p * 1.2;
+    return {
+      p,
+      ticket,
+      margin: ticket * marginRate(u),
+      cost,
+      primary: culturalVisit * 100,
+    };
+  }
+
+  function conciergeOff(u: FeatureImpactUser) {
+    const p = baselineVisitProb(u, ctx);
+    const t = ticketBrl(u, ctx);
+    // Sem concierge: match culinária/horário mais fraco
+    const goodMatch =
+      0.35 +
+      (1 - u.priceSensitivity) * 0.08 +
+      userNoise(ctx, u.id, "concOff") * 0.06;
+    return {
+      p: clamp01(p * 0.92),
+      ticket: t,
+      margin: t * marginRate(u),
+      cost: 0,
+      primary: clamp01(goodMatch) * 100,
+    };
+  }
+
+  function conciergeOn(u: FeatureImpactUser) {
+    const off = conciergeOff(u);
+    const lift =
+      (0.06 +
+        (u.archetype === "indecisive_explorer" ? 0.09 : 0.04) +
+        (u.frictionReason === "preco" ? 0.03 : 0) +
+        (u.comerForaVisits90d === 0 ? 0.05 : 0.02) +
+        userNoise(ctx, u.id, "concLift") * 0.03) *
+      ampPay *
+      (0.95 + incentiveAmp(u, ctx) * 0.05);
+    const p = clamp01(off.p + lift);
+    const ticket =
+      off.ticket *
+      (1.03 +
+        ((u.benefitValueBrl ?? 0) > 0 ? 0.02 : 0) +
+        userNoise(ctx, u.id, "concT") * 0.02);
+    const goodMatch = clamp01(
+      0.62 +
+        (1 - u.priceSensitivity) * 0.1 +
+        userNoise(ctx, u.id, "concOn") * 0.05,
+    );
+    // Custo de chamada LLM amortizado (Haiku/Sonnet) por visita esperada
+    const cost = p * (0.8 + season.benefitIntensityMult * 0.4);
+    return {
+      p,
+      ticket,
+      margin: ticket * marginRate(u),
+      cost,
+      primary: goodMatch * 100,
+    };
+  }
+
   function stackOn(u: FeatureImpactUser) {
     const pre = preOrderOn(u);
     const tab = digitalTabOn(u);
     const split = splitOn(u);
     const prog = progressiveOn(u);
+    const exp = localExperiencesOn(u);
+    const conc = conciergeOn(u);
     const p = clamp01(
       baselineVisitProb(u, ctx) +
         (pre.p - preOrderOff(u).p) * 0.85 +
         (tab.p - digitalTabOff(u).p) * 0.5 +
         (split.p - splitOff(u).p) * 0.75 +
-        (prog.p - progressiveOff(u).p) * 0.7,
+        (prog.p - progressiveOff(u).p) * 0.7 +
+        (exp.p - localExperiencesOff(u).p) * 0.55 +
+        (conc.p - conciergeOff(u).p) * 0.65,
     );
     const ticket =
       ticketBrl(u, ctx) *
       partyHeadcount(u.partySizeMode) *
       (tab.ticket / Math.max(digitalTabOff(u).ticket, 1));
-    const cost = pre.cost + tab.cost + split.cost + prog.cost;
+    const cost =
+      pre.cost + tab.cost + split.cost + prog.cost + exp.cost + conc.cost;
     const margin =
       ticket * marginRate(u) * (split.primary / 100) * 0.95 - cost * 0.15;
     return {
@@ -532,6 +632,26 @@ export function buildFeatureImpactReport(
       progressiveOff,
       progressiveOn,
       "Check-in completo do grupo",
+      "%",
+    ),
+    buildFeature(
+      "local_experiences",
+      "Descubra a cidade",
+      "Mede se a vitrine editorial (roteiros locais com slots reais) aumenta visita cultural e ticket.",
+      users,
+      localExperiencesOff,
+      localExperiencesOn,
+      "Visitas via curadoria local",
+      "%",
+    ),
+    buildFeature(
+      "dine_concierge",
+      "Pergunte onde jantar",
+      "Mede se o concierge (IA ancorada em mesas/benefícios reais) melhora match e taxa de ida ao salão.",
+      users,
+      conciergeOff,
+      conciergeOn,
+      "Match útil da recomendação",
       "%",
     ),
   ];

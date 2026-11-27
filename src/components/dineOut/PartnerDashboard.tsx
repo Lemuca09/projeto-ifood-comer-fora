@@ -17,6 +17,10 @@ import { useAnalyticsDashboard } from "@/context/AnalyticsDashboardContext";
 import { buildPartnerDashboard } from "@/domain/dineOut/partnerMetrics";
 import { brl } from "@/components/analytics/format";
 import { FeatureImpactPanel } from "@/components/analytics/FeatureImpactPanel";
+import {
+  MetricInfoTip,
+  type MetricInfoContent,
+} from "@/components/analytics/MetricInfoTip";
 
 type CompareMode = "beneficios" | "comer_fora";
 
@@ -91,36 +95,127 @@ export function PartnerDashboard() {
           },
         ];
 
-  const kpis = [
+  const kpis: Array<{
+    label: string;
+    value: string;
+    hint: string;
+    info: MetricInfoContent;
+  }> = [
     {
       label: "Ocupação de mesas",
       value: `${board.kpis.occupancyPct.toFixed(1)}%`,
       hint: "Comer Fora + benefícios",
+      info: {
+        measures:
+          "% de mesas ocupadas no cenário ativo (Comer Fora + benefícios).",
+        formula:
+          "baseOcc (42–54% seed) + lift CF (~14–20 pp) + lift benefícios (~5–9 pp)",
+        variables: "seed · occupancyPct do cenário comer_fora_beneficios",
+        premise: "Sintético determinístico (mulberry32) - não é POS real",
+        columns: [
+          {
+            name: "Ocupação",
+            detail:
+              "Gerada: ocupação base da seed, depois somam lifts do Comer Fora (reserva+pré-pedido) e dos benefícios ativos. O card mostra o cenário com benefícios.",
+          },
+        ],
+      },
     },
     {
       label: "Ticket médio",
       value: brl(board.kpis.avgTicketBrl),
       hint: "Inclui pré-pedido e comanda",
+      info: {
+        measures: "Gasto médio por cliente no salão (pré-pedido + comanda).",
+        formula:
+          "baseTicket (68–96 seed) + lift CF (~6–14) + lift benefícios (~9–16)",
+        variables: "seed · avgTicketBrl do cenário comer_fora_beneficios",
+        premise: "Sintético; sobe com pré-pedido/comanda e incentivo",
+        columns: [
+          {
+            name: "Ticket médio",
+            detail:
+              "Gerado na seed e aumentado nos cenários CF e +benefícios. Representa o ticket típico com consumo antecipado e na mesa.",
+          },
+        ],
+      },
     },
     {
       label: "Tempo médio de permanência",
       value: `${board.kpis.avgStayMin} min`,
       hint: "Pré-pedido reduz espera ociosa",
+      info: {
+        measures: "Minutos médios na mesa até liberar para o próximo grupo.",
+        formula:
+          "baseStay (55–73) − redução CF (~8–12 min) por pré-pedido; benefícios quase não mudam",
+        variables: "seed · avgStayMin",
+        premise: "Pré-pedido encurta espera ociosa na mesa",
+        columns: [
+          {
+            name: "Permanência",
+            detail:
+              "Gerada: base alta na operação tradicional; Comer Fora reduz minutos porque o prato começa perto da chegada. Menor permanência ociosa = mais giro.",
+          },
+        ],
+      },
     },
     {
       label: "Taxa de recorrência",
       value: `${board.kpis.recurrencePct.toFixed(1)}%`,
       hint: "Clientes que voltam em 30d",
+      info: {
+        measures: "% de clientes que voltam ao salão em até 30 dias.",
+        formula:
+          "baseRec (18–28%) + lift CF (~8–13 pp) + lift benefícios (~7–11 pp)",
+        variables: "seed · recurrencePct",
+        premise: "Sintético; benefícios e CF aumentam retorno",
+        columns: [
+          {
+            name: "Recorrência 30d",
+            detail:
+              "Gerada por seed e elevada nos cenários com Comer Fora e com benefícios (giftback/cupom/prato na narrativa do parceiro).",
+          },
+        ],
+      },
     },
     {
       label: "Margem média",
       value: `${board.avgMarginPct.toFixed(1)}%`,
       hint: "avg_margin_pct · feature store",
+      info: {
+        measures: "Margem % média da base de personas (feature store).",
+        formula:
+          "Se há dash: média(avg_margin_pct das personas). Senão: 18–24% via seed",
+        variables: "avg_margin_pct · seed",
+        premise: "Vem da feature store quando a demo já carregou analytics",
+        columns: [
+          {
+            name: "avg_margin_pct",
+            detail:
+              "Calculada na persona (seed: 12 + (1−price_sensitivity)×10 + ruído). No parceiro: média da base atual, ou fallback sintético se ainda não houver personas.",
+          },
+        ],
+      },
     },
     {
       label: "Margem lifetime (base)",
       value: brl(board.lifetimeMarginBrl),
       hint: "Soma lifetime_margin_brl · ROI real",
+      info: {
+        measures:
+          "Soma da margem lifetime dos clientes da base (proxy de valor do salão).",
+        formula:
+          "Σ lifetime_margin_brl das personas; fallback seed 12k–20k se vazio",
+        variables: "lifetime_margin_brl · ticket · visitas · avg_margin_pct",
+        premise: "Valor acumulado da base - não é caixa do mês",
+        columns: [
+          {
+            name: "lifetime_margin_brl",
+            detail:
+              "Por persona: ticket × max(1, dine-in+CF) × (avg_margin_pct/100). No card: soma da base do analytics (ou valor sintético se a base ainda não carregou).",
+          },
+        ],
+      },
     },
   ];
 
@@ -143,9 +238,12 @@ export function PartnerDashboard() {
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {kpis.map((k) => (
           <div key={k.label} className="if-card p-4">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-muted">
-              {k.label}
-            </p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-muted">
+                {k.label}
+              </p>
+              <MetricInfoTip label={k.label} content={k.info} />
+            </div>
             <p className="font-title mt-2 text-2xl font-extrabold text-ink">
               {k.value}
             </p>
@@ -223,12 +321,12 @@ export function PartnerDashboard() {
         </div>
       </section>
 
-      <section className="if-card space-y-3 p-4 sm:p-5">
+      <section className="if-card relative z-0 space-y-3 overflow-visible p-4 hover:z-40 focus-within:z-40 sm:p-5">
         <div className="flex items-center gap-2">
           <h2 className="font-title text-lg font-extrabold">
             GMV semanal por cenário
           </h2>
-          <div className="group relative inline-flex">
+          <div className="group relative z-[80] inline-flex">
             <button
               type="button"
               className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[var(--ifdl-color-border)] bg-white text-[11px] font-bold text-muted transition hover:border-ifood hover:text-ifood focus:outline-none focus-visible:ring-2 focus-visible:ring-ifood"
@@ -240,16 +338,17 @@ export function PartnerDashboard() {
             <div
               id="gmv-partner-hint"
               role="tooltip"
-              className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-[min(92vw,22rem)] -translate-x-1/2 rounded-if border border-[var(--ifdl-color-border)] bg-white p-3 text-left text-[11px] leading-relaxed text-ink opacity-0 shadow-if transition duration-150 group-hover:opacity-100 group-focus-within:opacity-100 sm:left-0 sm:translate-x-0"
+              className="pointer-events-none absolute left-1/2 top-full z-[80] mt-2 w-[min(92vw,22rem)] -translate-x-1/2 rounded-if border border-[var(--ifdl-color-border)] bg-white p-3 text-left text-[11px] leading-relaxed text-ink opacity-0 shadow-if transition duration-150 group-hover:opacity-100 group-focus-within:opacity-100 sm:left-0 sm:translate-x-0"
             >
               <p className="font-extrabold text-ifood">Como calculamos este GMV</p>
               <p className="mt-1.5 text-muted">
                 Números sintéticos para a demo do parceiro.{" "}
-                <span className="font-semibold text-ink">Capas</span> = pessoas
-                atendidas no salão no mês (cada cliente sentado conta como 1
-                capa). Em cada cenário o GMV mensal é{" "}
                 <span className="font-semibold text-ink">
-                  capas × ticket médio × (ocupação ÷ 100)
+                  Pessoas atendidas
+                </span>{" "}
+                = clientes no salão no mês. Em cada cenário o GMV mensal é{" "}
+                <span className="font-semibold text-ink">
+                  pessoas atendidas × ticket médio × (ocupação ÷ 100)
                 </span>
                 . A série semanal divide esse mensal por 8 e aplica uma variação
                 leve por semana (S1–S8).
@@ -330,7 +429,7 @@ export function PartnerDashboard() {
 
       <p className="text-xs text-muted">
         Abaixo: impacto <strong>calculado por feature</strong> na base de personas
-        (com vs sem) — diferente do cenário de salão acima. Ver{" "}
+        (com vs sem) - diferente do cenário de salão acima. Ver{" "}
         <code className="text-[10px]">docs/METRICAS_IMPACTO_FEATURES.md</code>.
       </p>
       <FeatureImpactPanel />

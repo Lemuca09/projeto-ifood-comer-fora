@@ -1,4 +1,4 @@
-/** Catálogo sintético de pratos por culinária — base do “prato grátis”. */
+/** Catálogo sintético de pratos por culinária - base do “prato grátis”. */
 
 export const DISHES_BY_CUISINE: Record<
   string,
@@ -41,6 +41,12 @@ export const DISHES_BY_CUISINE: Record<
     { name: "Lasanha de berinjela", typicalPriceBrl: 44 },
     { name: "Wrap de falafel com hortaliças", typicalPriceBrl: 39 },
     { name: "Curry de grão-de-bico e arroz", typicalPriceBrl: 41 },
+  ],
+  Café: [
+    { name: "Petit gateau da casa", typicalPriceBrl: 28 },
+    { name: "Cheesecake de frutas vermelhas", typicalPriceBrl: 32 },
+    { name: "Brunch completo", typicalPriceBrl: 54 },
+    { name: "Torta holandesa individual", typicalPriceBrl: 26 },
   ],
 };
 

@@ -224,7 +224,7 @@ function localAnswer(params: {
     // casa com a culinária (slot real existe, mas de outros tipos).
     answer = `${nome}, agora são ${params.nowClock}. Nos lugares com mesa livre agora, não tem opção de ${cuisine} neste bairro. A melhor alternativa com vaga é ${primary.nome} (${primary.culinaria}) às ${slot}.`;
   } else {
-    answer = `${nome}, como você curte ${cuisine} e agora são ${params.nowClock}, minha recomendação principal é ${primary.nome} — tem mesa livre às ${slot}.`;
+    answer = `${nome}, como você curte ${cuisine} e agora são ${params.nowClock}, minha recomendação principal é ${primary.nome} - tem mesa livre às ${slot}.`;
   }
 
   if (params.benefit.tipo !== "nenhum") {
@@ -254,7 +254,7 @@ function localAnswer(params: {
 
 function clockTokens(label: string): string[] {
   const tokens: string[] = [];
-  // Exige "19h" / "19h30" / "19:30" — evita falso positivo em "grupo de 2".
+  // Exige "19h" / "19h30" / "19:30" - evita falso positivo em "grupo de 2".
   for (const m of label.matchAll(
     /\b([01]?\d|2[0-3])h([0-5]\d)?\b|\b([01]?\d|2[0-3]):([0-5]\d)\b/gi,
   )) {
@@ -295,7 +295,7 @@ export async function generateDineConciergeAnswer(params: {
   input: DiscoveryInput;
   forceFallback?: boolean;
 }): Promise<ConciergeResult> {
-  // 1) Pipeline hardcoded — nunca envia bruto ao Claude (AGENTS §7.2).
+  // 1) Pipeline hardcoded - nunca envia bruto ao Claude (AGENTS §7.2).
   const pre = runConciergePreLlm(params.input.queryText);
 
   const profile = params.input.userProfile;

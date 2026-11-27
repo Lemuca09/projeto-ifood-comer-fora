@@ -15,7 +15,7 @@ export function executiveBriefLocal(
       "A verba rende melhor quando cupom, giftback e prato grátis entram só onde o retorno se paga.",
     lucroReal: `Retorno ${dash.kpis.roi}x · faturamento ${dash.kpis.gmvDeltaPct > 0 ? "+" : ""}${dash.kpis.gmvDeltaPct}% · mix ${mix.cupom} cupom / ${mix.giftback} giftback / ${mix.prato_gratis} prato / ${mix.nenhum} sem benefício.`,
     canibalizacao:
-      "Risco maior em VIP Orgânicos se o cupom for agressivo demais — aí o desconto come margem de quem já pagaria cheio.",
+      "Risco maior em VIP Orgânicos se o cupom for agressivo demais - aí o desconto come margem de quem já pagaria cheio.",
     proximoPasso: top
       ? `Priorize ações ligadas a “${top.n}” e escale só estratégias com retorno positivo por pessoa e por restaurante.`
       : "Escale só estratégias com retorno positivo por pessoa e por restaurante.",

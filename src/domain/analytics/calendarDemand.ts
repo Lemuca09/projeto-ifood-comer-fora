@@ -9,11 +9,11 @@ export type CalendarFlags = {
   weekday: number;
   isHoliday: boolean;
   holidayName: string | null;
-  /** Véspera de Natal / Ano Novo — pico de salão. */
+  /** Véspera de Natal / Ano Novo - pico de salão. */
   isHolidayEve: boolean;
   /** Dias 5–15: maior propensão a gastar (salário). */
   isPaydayWindow: boolean;
-  /** Final do mês / início — bolso mais apertado. */
+  /** Final do mês / início - bolso mais apertado. */
   isTightBudget: boolean;
 };
 
@@ -122,7 +122,7 @@ export function getSeasonalityContext(date: Date): SeasonalityContext {
     demandBoost += 22;
     demandPressure += 0.35;
     benefitIntensityMult *= 0.55;
-    bits.push(`${flags.holidayName}: pico de salão — benefício leve / orgânico`);
+    bits.push(`${flags.holidayName}: pico de salão - benefício leve / orgânico`);
   } else if (flags.isHoliday) {
     // Finados / Tiradentes: menos saída; Natal/Ano Novo/Carnaval: mais
     const quiet =
@@ -132,12 +132,12 @@ export function getSeasonalityContext(date: Date): SeasonalityContext {
       demandBoost -= 8;
       demandPressure -= 0.15;
       benefitIntensityMult *= 1.2;
-      bits.push(`${flags.holidayName}: demanda fraca — estimular com trava`);
+      bits.push(`${flags.holidayName}: demanda fraca - estimular com trava`);
     } else {
       demandBoost += 14;
       demandPressure += 0.22;
       benefitIntensityMult *= 0.7;
-      bits.push(`${flags.holidayName}: salão aquecido — não queimar margem`);
+      bits.push(`${flags.holidayName}: salão aquecido - não queimar margem`);
     }
   }
 
@@ -147,7 +147,7 @@ export function getSeasonalityContext(date: Date): SeasonalityContext {
     demandPressure += 0.18;
     benefitIntensityMult *= 1.35;
     bits.push(
-      "Janela salário (dias 5–15): maior poder de compra — intensificar incentivo",
+      "Janela salário (dias 5–15): maior poder de compra - intensificar incentivo",
     );
   } else if (flags.isTightBudget) {
     demandBoost -= 7;
@@ -168,7 +168,7 @@ export function getSeasonalityContext(date: Date): SeasonalityContext {
   demandPressure = Math.max(0.55, Math.min(1.6, demandPressure));
   benefitIntensityMult = Math.max(0.45, Math.min(1.7, benefitIntensityMult));
 
-  // "Desconto baixo" só em pico de salão lotado — NÃO na janela de salário
+  // "Desconto baixo" só em pico de salão lotado - NÃO na janela de salário
   const preferLowDiscount =
     flags.isHolidayEve ||
     (flags.isHoliday &&
@@ -183,7 +183,7 @@ export function getSeasonalityContext(date: Date): SeasonalityContext {
     preferLowDiscount,
     summary: bits.length
       ? bits.join(" · ")
-      : "Calendário neutro — intensidade padrão de benefício",
+      : "Calendário neutro - intensidade padrão de benefício",
   };
 }
 

@@ -28,7 +28,7 @@ export function multipleRegression(
   const Z = X.map((row) => row.map((v, j) => (v - xMeans[j]) / (xStds[j] || 1)));
   const yz = y.map((v) => (v - yMean) / yStd);
 
-  // (Z'Z) β = Z'y  — Gauss-Jordan
+  // (Z'Z) β = Z'y  - Gauss-Jordan
   const xtx: number[][] = Array.from({ length: p }, () => Array(p).fill(0));
   const xty: number[] = Array(p).fill(0);
   for (let i = 0; i < n; i++) {

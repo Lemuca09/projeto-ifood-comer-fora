@@ -36,7 +36,7 @@ export type PartnerMarginHints = {
   lifetimeMarginBrl?: number;
 };
 
-/** KPIs sintéticos determinísticos — prova de valor para adesão do parceiro. */
+/** KPIs sintéticos determinísticos - prova de valor para adesão do parceiro. */
 export function buildPartnerDashboard(
   seed: number,
   restaurantName: string,

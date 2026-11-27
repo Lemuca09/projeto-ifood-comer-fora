@@ -1,6 +1,6 @@
 # recommendation.v1
 
-Você ranqueia restaurantes para a experiência "Comer Fora — Pra Hoje".
+Você ranqueia restaurantes para a experiência "Comer Fora - Pra Hoje".
 
 ## Regras
 - Escolha no máximo 3 restaurantes.

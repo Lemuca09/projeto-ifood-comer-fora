@@ -12,6 +12,8 @@ import {
 } from "recharts";
 import { useAnalyticsDashboard } from "@/context/AnalyticsDashboardContext";
 import { CLUSTER_META, type ClusterId } from "@/domain/analytics/pcaKmeans";
+import { ChartTitle } from "@/components/analytics/MetricInfoTip";
+import { M } from "@/components/analytics/metricInfoHelp";
 
 export function ClusterParetoChart() {
   const { dash } = useAnalyticsDashboard();
@@ -25,16 +27,40 @@ export function ClusterParetoChart() {
   }));
 
   return (
-    <section className="if-card space-y-4 p-4 sm:p-5">
-      <div>
-        <h2 className="font-title text-lg font-extrabold">
-          Os 4 tipos de cliente
-        </h2>
-        <p className="mt-1 text-xs text-muted">
-          Compare quantas pessoas há em cada grupo versus quanto faturamento e
-          lucro elas geram — dá para ver onde a verba rende mais.
-        </p>
-      </div>
+    <section className="space-y-4 rounded-if-lg border border-[var(--ifdl-color-border)] bg-white p-4 shadow-[var(--ifdl-shadow-card)] sm:p-5">
+      <ChartTitle
+        title="Os 4 tipos de cliente"
+        info={{
+          measures:
+            "Depois da clusterização: quanto cada perfil representa em pessoas, faturamento e lucro.",
+          formula:
+            "share = soma do cluster / total. Clusters vêm do K-Means (ver gráfico PCA).",
+          variables:
+            "cluster · spendAfter · marginAfter · count · userSharePct · revenueSharePct · profitSharePct",
+          premise:
+            "Barras de participação - complementar ao mapa PCA.",
+          columns: [
+            M.cluster,
+            {
+              name: "% das pessoas (userSharePct)",
+              detail:
+                "Participação do cluster na base. count(cluster) / N personas × 100. Contagem após K-Means + mapeamento.",
+            },
+            {
+              name: "% do faturamento (revenueSharePct)",
+              detail:
+                "Participação no GMV after. Σ spendAfter do cluster / Σ spendAfter total × 100.",
+            },
+            {
+              name: "% do lucro (profitSharePct)",
+              detail:
+                "Participação na margem after. Σ marginAfter do cluster / Σ marginAfter total × 100.",
+            },
+            M.spendAfter,
+            M.marginAfter,
+          ],
+        }}
+      />
 
       <ul className="grid gap-2 sm:grid-cols-2">
         {(Object.keys(CLUSTER_META) as ClusterId[]).map((id) => {
@@ -50,11 +76,10 @@ export function ClusterParetoChart() {
                 {meta.label}
                 {stats ? (
                   <span className="ml-1 font-semibold text-muted">
-                    · {stats.count} pessoas ({stats.userSharePct}%)
+                    · {stats.count} ({stats.userSharePct}%)
                   </span>
                 ) : null}
               </p>
-              <p className="mt-0.5 text-muted">{meta.blurb}</p>
             </li>
           );
         })}

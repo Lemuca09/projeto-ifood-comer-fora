@@ -119,7 +119,7 @@ function buildPersona(i, restaurantIds = []) {
   if (share > 100) share = 100;
   if (group > 1) group = 1;
 
-  // —— Feature store §7 ——
+  // -- Feature store §7 --
   const preferred_cuisine = CUISINES[i % CUISINES.length];
   const preferred_hour_slot = HOURS[(i * 3) % HOURS.length];
   const price_sensitivity = Number(

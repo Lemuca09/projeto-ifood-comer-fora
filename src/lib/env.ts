@@ -24,7 +24,7 @@ export type ServerEnv = z.infer<typeof serverSchema>;
 let cached: ServerEnv | null = null;
 
 export function getServerEnv(): ServerEnv {
-  // Em dev, não cacheia — .env pode mudar / HMR sem reiniciar o processo.
+  // Em dev, não cacheia - .env pode mudar / HMR sem reiniciar o processo.
   if (cached && process.env.NODE_ENV === "production") return cached;
   const parsed = serverSchema.safeParse({
     SUPABASE_URL: process.env.SUPABASE_URL,

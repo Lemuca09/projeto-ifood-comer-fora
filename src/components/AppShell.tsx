@@ -41,14 +41,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Link href="/" className={navClass(home)}>
                 O Projeto
               </Link>
+              <Link href="/metricas" className={navClass(metrics)}>
+                Métricas
+              </Link>
               <Link href="/cliente" className={navClass(cliente)}>
                 Cliente
               </Link>
               <Link href="/parceiro" className={navClass(parceiro)}>
                 Parceiro
-              </Link>
-              <Link href="/metricas" className={navClass(metrics)}>
-                Métricas
               </Link>
             </nav>
           </div>
@@ -59,7 +59,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               onClick={() => void regenerate()}
               disabled={regenerating}
               className="hidden rounded-if border border-ifood/30 bg-ifood-soft px-3 py-2 text-xs font-extrabold text-ifood transition hover:bg-ifood hover:text-white disabled:opacity-50 sm:inline-flex"
-              title="Nova amostra sintética — recalcula KPIs, clusters e gráficos"
+              title="Nova amostra sintética - recalcula KPIs, clusters e gráficos"
             >
               {regenerating ? "Regenerando…" : "Regerar Usuários"}
             </button>
@@ -82,7 +82,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <span className="block truncate text-[10px] font-semibold text-muted">
                   {data
                     ? ARCHETYPE_LABELS[data.user.archetype as Archetype]
-                    : "—"}
+                    : "-"}
                   {typeof fatigue === "number" ? ` · fadiga ${fatigue}%` : ""}
                 </span>
               </span>
@@ -107,6 +107,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           O Projeto
         </Link>
         <Link
+          href="/metricas"
+          className={`if-nav-item ${metrics ? "if-nav-item-active" : ""}`}
+        >
+          <span className="text-lg" aria-hidden>
+            ▦
+          </span>
+          Métricas
+        </Link>
+        <Link
           href="/cliente"
           className={`if-nav-item ${cliente ? "if-nav-item-active" : ""}`}
         >
@@ -123,15 +132,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             ▤
           </span>
           Parceiro
-        </Link>
-        <Link
-          href="/metricas"
-          className={`if-nav-item ${metrics ? "if-nav-item-active" : ""}`}
-        >
-          <span className="text-lg" aria-hidden>
-            ▦
-          </span>
-          Métricas
         </Link>
       </nav>
 

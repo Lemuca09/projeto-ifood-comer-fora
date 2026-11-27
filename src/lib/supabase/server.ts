@@ -17,7 +17,7 @@ export async function createUserServerClient() {
             cookieStore.set(name, value, options),
           );
         } catch {
-          // Server Component sem permissão de set — ok em read-only.
+          // Server Component sem permissão de set - ok em read-only.
         }
       },
     },

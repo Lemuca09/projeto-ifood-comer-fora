@@ -84,7 +84,7 @@ export function DigitalTabClient({ reservationId }: { reservationId: string }) {
   function addItem(itemId: string) {
     const item = menu.find((m) => m.id === itemId);
     if (!item || isPaid) return;
-    // Só soma em linha "mesa" — nunca mistura com pré-pedido
+    // Só soma em linha "mesa" - nunca mistura com pré-pedido
     const existingTable = visit!.lines.find(
       (l) => l.itemId === itemId && l.source === "table",
     );
@@ -174,7 +174,7 @@ export function DigitalTabClient({ reservationId }: { reservationId: string }) {
           <span className="text-[10px] font-bold uppercase text-emerald-700">
             Pagamento SIMULADO ·{" "}
           </span>
-          Conta quitada. Obrigado — até a próxima visita.
+          Conta quitada. Obrigado - até a próxima visita.
         </div>
       )}
 

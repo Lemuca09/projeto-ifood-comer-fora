@@ -12,7 +12,7 @@ export const CLUSTER_META: Record<
 > = {
   vip_organic: {
     label: "VIPs Orgânicos",
-    blurb: "Gasta bem e quase não usa cupom — cuidado para não ‘ensinar’ desconto.",
+    blurb: "Gasta bem e quase não usa cupom - cuidado para não ‘ensinar’ desconto.",
     strategy: "Preferir lembrete ou giftback leve (o otimizador decide)",
     color: "#ea1d2c",
   },
@@ -30,7 +30,7 @@ export const CLUSTER_META: Record<
   },
   new_occasional: {
     label: "Novos / Ocasionais",
-    blurb: "Poucas visitas ainda — precisa criar hábito no Comer Fora.",
+    blurb: "Poucas visitas ainda - precisa criar hábito no Comer Fora.",
     strategy: "Prato grátis / giftback progressivo / 1ª visita (o otimizador decide)",
     color: "#50a773",
   },

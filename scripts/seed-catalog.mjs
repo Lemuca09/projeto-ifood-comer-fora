@@ -63,7 +63,7 @@ restaurants[9] = {
   ...restaurants[9],
   id: "11111111-1111-1111-1111-111111111111",
   name: "Casa Lotada Demo",
-  description: "Sempre cheio — cenário SEM VAGAS.",
+  description: "Sempre cheio - cenário SEM VAGAS.",
   neighborhood: "Boqueirão",
   address: "Av. Sintética 203, Boqueirão",
   price_range: 2,

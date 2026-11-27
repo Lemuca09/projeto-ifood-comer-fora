@@ -1,5 +1,6 @@
 import type { DashboardPayload, EnrichedUser } from "@/services/analyticsEngine";
 import { benefitCopy } from "@/lib/benefitCopy";
+import { freeDishForRestaurant } from "@/domain/dineOut/menu";
 
 export type ClientRecoCard = {
   restaurantId: string;
@@ -39,16 +40,6 @@ type CatalogLike = {
   promo_discount_pct?: number | null;
 };
 
-function frictionWinbackBenefit(
-  user: EnrichedUser,
-): "cupom" | "giftback" | "prato_gratis" | "nenhum" {
-  if (user.frictionReason === "preco") return "cupom";
-  if (user.frictionReason === "qualidade") return "prato_gratis";
-  if (user.frictionReason === "demora") return "giftback";
-  if (user.benefitType === "nenhum") return "cupom";
-  return user.benefitType;
-}
-
 /** Recomendações a partir de restaurantes do banco (ex.: decision bootstrap). */
 export function buildClientRecommendationsFromCatalog(
   restaurants: Array<
@@ -66,14 +57,6 @@ export function buildClientRecommendationsFromCatalog(
     user.lastNpsScore <= 5 ||
     (user.frictionReason !== "nenhum" && user.sentiment !== "positivo");
 
-  const copy = benefitCopy({
-    benefitType: user.benefitType,
-    benefitValueBrl: user.benefitValueBrl,
-    minTicketBrl: user.minTicketBrl,
-    freeDishName: user.freeDishName,
-    strategy: user.strategy,
-  });
-
   return restaurants.map((r, i) => {
     const isFavorite = !!user.favoriteRestaurantId && r.id === user.favoriteRestaurantId;
     const scorePct =
@@ -83,6 +66,17 @@ export function buildClientRecommendationsFromCatalog(
             96,
             42 + ((user.code.charCodeAt(0) + i * 13) % 40) + (isFavorite ? 12 : 0),
           );
+    const dish =
+      user.benefitType === "prato_gratis"
+        ? freeDishForRestaurant(r.name, r.description, user.code)
+        : null;
+    const copy = benefitCopy({
+      benefitType: user.benefitType,
+      benefitValueBrl: user.benefitValueBrl,
+      minTicketBrl: user.minTicketBrl,
+      freeDishName: dish?.name ?? user.freeDishName,
+      strategy: user.strategy,
+    });
     return {
       restaurantId: r.id,
       name: isFavorite ? `${r.name} ★` : r.name,
@@ -157,12 +151,17 @@ export function buildClientHistoryFromCatalog(
       lowRecurrence ||
       favoriteChurn ||
       (user.frictionReason !== "nenhum" && user.lastNpsScore <= 6);
-    const winBenefit = frictionWinbackBenefit(user);
+    // Sempre o benefício do otimizador (um tipo só). Winback só destaca, não troca o tipo.
+    const offerWinback = showWinback && user.benefitType !== "nenhum";
+    const dish =
+      user.benefitType === "prato_gratis"
+        ? freeDishForRestaurant(r.name, r.description, `${user.code}:wb`)
+        : null;
     const copy = benefitCopy({
-      benefitType: showWinback ? winBenefit : "nenhum",
-      benefitValueBrl: showWinback ? Math.max(user.benefitValueBrl, 18) : 0,
-      minTicketBrl: showWinback ? Math.max(user.minTicketBrl, 80) : 0,
-      freeDishName: user.freeDishName,
+      benefitType: offerWinback ? user.benefitType : "nenhum",
+      benefitValueBrl: offerWinback ? user.benefitValueBrl : 0,
+      minTicketBrl: offerWinback ? user.minTicketBrl : 0,
+      freeDishName: dish?.name ?? user.freeDishName,
     });
     const frictionLabel =
       user.frictionReason === "preco"
@@ -186,8 +185,8 @@ export function buildClientHistoryFromCatalog(
       visits90d: visits,
       losingInterest: showWinback,
       isFavorite,
-      winbackTitle: showWinback ? copy.title : null,
-      winbackDetail: showWinback
+      winbackTitle: offerWinback ? copy.title : null,
+      winbackDetail: offerWinback
         ? `Reativação${frictionLabel ? ` · atrito: ${frictionLabel}` : ""}${
             isFavorite ? " · favorito" : ""
           } · ${copy.detail}`

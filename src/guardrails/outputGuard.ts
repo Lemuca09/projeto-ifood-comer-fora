@@ -42,7 +42,7 @@ function canaryLeak(text: string, canary: string): boolean {
 
 /**
  * Valida saída do modelo antes de qualquer render.
- * Preço/horário/disponibilidade NÃO vêm do modelo — só IDs + motivo.
+ * Preço/horário/disponibilidade NÃO vêm do modelo - só IDs + motivo.
  */
 export function outputGuard(params: {
   rawText: string;

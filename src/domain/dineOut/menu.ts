@@ -14,14 +14,29 @@ const DESSERTS = [
   { name: "Sorvete 2 bolas", priceBrl: 16, prepMin: 2 },
 ];
 
-/** Infere culinária pelo nome do restaurante (seed sintético). */
-export function inferCuisine(restaurantName: string): string {
-  const n = restaurantName.toLowerCase();
-  if (/sushi|nikkei|temaki|japon/.test(n)) return "Japonesa";
+/** Infere culinária pelo nome/descrição do restaurante (seed sintético). */
+export function inferCuisine(
+  restaurantName: string,
+  description?: string | null,
+): string {
+  const n = `${restaurantName} ${description ?? ""}`.toLowerCase();
+  if (/lamen|ramen|lám|l[aá]men|sushi|nikkei|temaki|japon|yakisoba/.test(n)) {
+    return "Japonesa";
+  }
   if (/burger|smash|hamb/.test(n)) return "Hambúrguer";
-  if (/pizza|trattoria|italia|nhoque|pasta/.test(n)) return "Italiana";
-  if (/esfiha|árabe|arabe|kibe|shawarma/.test(n)) return "Árabe";
-  // Nomes do seed: "Buddha Bowl Maré", "Veg Aparecida", etc.
+  if (
+    /cantina|pizza|trattoria|italia|itali|nhoque|pasta|risoto|massa/.test(n)
+  ) {
+    return "Italiana";
+  }
+  if (/esfiha|árabe|arabe|kibe|shawarma|liban|siria|síria/.test(n)) {
+    return "Árabe";
+  }
+  if (
+    /doce|caf[eé]|ceia|confeit|sobremesa|padaria|doceria|brunch/.test(n)
+  ) {
+    return "Café";
+  }
   if (
     /buddha|veggie|\bveg\b|vegetari|vegana|plant.?based|falafel|gr[aã]o.?de.?bico/.test(
       n,
@@ -29,7 +44,30 @@ export function inferCuisine(restaurantName: string): string {
   ) {
     return "Vegetariana";
   }
+  if (
+    /churras|espetinho|picanha|churrasquinho|grelhad|steak|costela|brasileir/.test(
+      n,
+    )
+  ) {
+    return "Brasileira";
+  }
   return "Brasileira";
+}
+
+/** Prato grátis coerente com a culinária do restaurante (determinístico). */
+export function freeDishForRestaurant(
+  restaurantName: string,
+  description?: string | null,
+  salt = "",
+): { name: string; typicalPriceBrl: number } {
+  const cuisine = inferCuisine(restaurantName, description);
+  const pool = DISHES_BY_CUISINE[cuisine] ?? DISHES_BY_CUISINE.Brasileira;
+  const key = `${restaurantName}|${description ?? ""}|${salt}`;
+  let h = 0;
+  for (let i = 0; i < key.length; i++) {
+    h = (h * 31 + key.charCodeAt(i)) >>> 0;
+  }
+  return pool[h % pool.length]!;
 }
 
 export function buildMenu(cuisine: string, restaurantId: string): MenuItem[] {

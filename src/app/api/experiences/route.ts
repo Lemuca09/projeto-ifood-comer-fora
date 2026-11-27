@@ -5,7 +5,7 @@ import { buildLocalExperienceCards } from "@/services/localExperiences";
 
 /**
  * Vitrine editorial "Descubra a Cidade".
- * Slots e promo do restaurante vêm só do banco — sem inventar benefício.
+ * Slots e promo do restaurante vêm só do banco - sem inventar benefício.
  */
 export async function GET(request: Request) {
   try {

@@ -79,7 +79,7 @@ export function ExecutiveInsightsCard() {
     <section className="overflow-hidden rounded-if-lg border border-ifood/20 bg-gradient-to-br from-ifood-soft via-white to-white p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-title text-lg font-extrabold text-ink">
-          Leitura executiva
+          Leitura rápida
         </h2>
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-bold uppercase tracking-wide text-muted">

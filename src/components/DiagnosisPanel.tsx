@@ -31,7 +31,7 @@ export function DiagnosisPanel({
       <div className="space-y-4 border-t border-[var(--ifdl-color-border)] px-4 py-4 sm:px-5">
         {d.silent_mode && (
           <div className="rounded-if border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-            <strong>Modo silencioso</strong> — fadiga {d.fatigue_risk_pct}% (≥
+            <strong>Modo silencioso</strong> - fadiga {d.fatigue_risk_pct}% (≥
             50%). Evitamos notificação invasiva, mas você ainda pode reservar mesa.
           </div>
         )}

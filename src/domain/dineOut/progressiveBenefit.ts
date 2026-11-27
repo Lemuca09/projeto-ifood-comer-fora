@@ -36,7 +36,7 @@ export type ProgressivePreview = {
 
 /**
  * Cupom/giftback sobe com o grupo; ticket mínimo sobe na mesma proporção
- * (desconto ≤ ~25% do ticket mín.) — sem capar pelo ticket médio individual.
+ * (desconto ≤ ~25% do ticket mín.) - sem capar pelo ticket médio individual.
  */
 export function progressiveBenefitForParty(params: {
   partySize: number;
@@ -72,27 +72,34 @@ export function progressiveBenefitForParty(params: {
   }
 
   if (params.benefitType === "prato_gratis") {
-    const dishBonus = Number((18 * (mult - 1)).toFixed(2));
-    const progressiveValue = Number((base + dishBonus).toFixed(2));
+    // Tipo vem do otimizador; só ajusta trava/check-in ao grupo - sem misturar cupom.
+    const dishValue = Math.max(base, 18);
     const minTicket = Math.ceil(
-      Math.max(params.minTicketBrl || 80, progressiveValue * 3.2) * mult,
+      Math.max(params.minTicketBrl || 80, dishValue * 3.2) *
+        (params.partySize >= 4 ? 1.15 : 1),
     );
+    const copy = benefitCopy({
+      benefitType: "prato_gratis",
+      benefitValueBrl: dishValue,
+      minTicketBrl: minTicket,
+      freeDishName: params.freeDishName,
+    });
     return {
       partySize: params.partySize,
-      multiplier: mult,
-      baseValueBrl: base,
-      progressiveValueBrl: progressiveValue,
+      multiplier: 1,
+      baseValueBrl: dishValue,
+      progressiveValueBrl: dishValue,
       minTicketBrl: minTicket,
       requiredCheckIns: need,
-      title: `Prato grátis + R$ ${dishBonus.toFixed(0)} bônus grupo (${params.partySize})`,
-      detail: `Valor estimado ${progressiveValue.toFixed(0)} · ticket mín. R$ ${minTicket} · ${need} check-ins.`,
+      title: copy.title,
+      detail: `${copy.detail} · grupo ${params.partySize} · ${need} check-in${need > 1 ? "s" : ""} para liberar`,
       benefitType: "prato_gratis",
       freeDishName: params.freeDishName,
     };
   }
 
+  // cupom | giftback: mesmo tipo do otimizador; valor escala com o grupo.
   const progressiveValue = Number((base * mult).toFixed(2));
-  // Ticket mínimo proporcional: cobre o cupom (~25% max) e sobe com o grupo
   const minFromShare = progressiveValue / 0.25;
   const minFromBase = Math.max(params.minTicketBrl || 0, base * 3.2) * mult;
   const minTicket = Number(
@@ -105,6 +112,8 @@ export function progressiveBenefitForParty(params: {
     minTicketBrl: minTicket,
     freeDishName: params.freeDishName,
   });
+  const kindLabel =
+    params.benefitType === "giftback" ? "Giftback" : "Cupom";
 
   return {
     partySize: params.partySize,
@@ -114,7 +123,7 @@ export function progressiveBenefitForParty(params: {
     minTicketBrl: minTicket,
     requiredCheckIns: need,
     title: `${copy.title} · grupo ${params.partySize} pessoas`,
-    detail: `Cupom ${brlShort(base)} → ${brlShort(progressiveValue)} (${mult.toFixed(2)}×) · ticket mín. ${brlShort(minTicket)} · ${need} check-ins.`,
+    detail: `${kindLabel} ${brlShort(base)} → ${brlShort(progressiveValue)} (${mult.toFixed(2)}×) · ticket mín. ${brlShort(minTicket)} · ${need} check-ins.`,
     benefitType: params.benefitType,
     freeDishName: params.freeDishName,
   };

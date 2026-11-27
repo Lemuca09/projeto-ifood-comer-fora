@@ -74,7 +74,7 @@ export async function executiveBrief(
   }));
 
   const text = await callClaudeJson(
-    `Analista Comer Fora. JSON keys: headline,lucroReal,canibalizacao,proximoPasso (pt-BR, ≤18 palavras cada). Escolha eficiente cupom|giftback|prato|nenhum — não diga "só giftback".
+    `Analista Comer Fora. JSON keys: headline,lucroReal,canibalizacao,proximoPasso (pt-BR, ≤18 palavras cada). Escolha eficiente cupom|giftback|prato|nenhum - não diga "só giftback".
 d:{gmvΔ:${dash.kpis.gmvDeltaPct},roi:${dash.kpis.roi},lift:${dash.kpis.liftVsControl},mix:${JSON.stringify(mix)},cl:${JSON.stringify(clusters)},β:${JSON.stringify(top)}}`,
     ["executive", dash.seed, dash.kpis.roi, mix.cupom, mix.giftback],
     ABUSE_LIMITS.maxOutputTokensAnalytics,
@@ -112,10 +112,10 @@ export async function restaurantCampaignPlan(
       local?.strategy ??
       "Cupom no horário fraco, giftback na 1ª visita ou campanha sem desconto",
     horarioIdeal: season.isPaydayWindow
-      ? "Dias 5–15: empurrar Comer Fora com cupom/giftback/prato — usuário com poder de compra"
+      ? "Dias 5–15: empurrar Comer Fora com cupom/giftback/prato - usuário com poder de compra"
       : season.preferLowDiscount
         ? "Feriado/véspera lotada: notificação orgânica; cupom só em horário morto"
-        : "Terça e quarta 15h–17h / domingo 18h–19h — estimular fora da janela de salário com trava",
+        : "Terça e quarta 15h–17h / domingo 18h–19h - estimular fora da janela de salário com trava",
     publicoAlvo: `Parceiros em ${neighborhood}${
       locals.length ? ` (${restaurantNames})` : ""
     } · clusters × ociosidade × sazonalidade (${season.summary})`,

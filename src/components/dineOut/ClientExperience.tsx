@@ -8,6 +8,7 @@ import { BenefitSearch } from "@/components/BenefitSearch";
 import { LocalExperiences } from "@/components/dineOut/LocalExperiences";
 import { buildClientHistoryFromCatalog } from "@/domain/dineOut/clientView";
 import { benefitCopy } from "@/lib/benefitCopy";
+import { freeDishForRestaurant } from "@/domain/dineOut/menu";
 import { partySizeFromMode } from "@/lib/dineTime";
 import { priceRangeLabel } from "@/lib/constants";
 import type { PartySizeMode } from "@/domain/personas";
@@ -38,6 +39,36 @@ export function ClientExperience() {
         detail: "Abra o restaurante para ver Delivery e Comer Fora",
         minSpendLine: null as string | null,
       };
+
+  function benefitForRestaurant(
+    name: string,
+    description?: string | null,
+  ): { title: string; detail: string } {
+    if (!enriched) {
+      return {
+        title: benefitUi.title,
+        detail: benefitUi.detail,
+      };
+    }
+    const dish =
+      enriched.benefitType === "prato_gratis"
+        ? freeDishForRestaurant(name, description, enriched.code)
+        : null;
+    const copy = benefitCopy({
+      benefitType: enriched.benefitType,
+      benefitValueBrl: enriched.benefitValueBrl,
+      minTicketBrl: enriched.minTicketBrl,
+      freeDishName: dish?.name ?? enriched.freeDishName,
+      strategy: enriched.strategy,
+    });
+    return {
+      title: copy.title,
+      detail:
+        enriched.minTicketBrl > 0
+          ? `${copy.detail} · libera com gastos acima de R$ ${enriched.minTicketBrl.toFixed(0)}`
+          : copy.detail,
+    };
+  }
 
   const prefersQuietBenefits = data?.user.archetype === "push_averse";
 
@@ -110,7 +141,7 @@ export function ClientExperience() {
           Para você, {data.user.display_name.split(" ").slice(-1)[0]}
         </h1>
         <p className="mt-2 max-w-xl text-sm text-white/85">
-          Abra um restaurante para ver Delivery e Comer Fora no mesmo lugar —
+          Abra um restaurante para ver Delivery e Comer Fora no mesmo lugar -
           reserve a mesa sem passar pelo perfil.
         </p>
       </section>
@@ -135,7 +166,7 @@ export function ClientExperience() {
               <div
                 id="reco-client-hint"
                 role="tooltip"
-                className="pointer-events-none absolute left-0 top-full z-20 mt-2 w-[min(92vw,24rem)] rounded-if border border-[var(--ifdl-color-border)] bg-white p-3 text-left text-[11px] leading-relaxed text-ink opacity-0 shadow-if transition duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
+                className="pointer-events-none absolute left-0 top-full z-[80] mt-2 w-[min(92vw,24rem)] rounded-if border border-[var(--ifdl-color-border)] bg-white p-3 text-left text-[11px] leading-relaxed text-ink opacity-0 shadow-if transition duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
               >
                 <p className="font-extrabold text-ifood">
                   Como montei esta vitrine
@@ -175,15 +206,15 @@ export function ClientExperience() {
                   </li>
                   <li>
                     <span className="font-semibold text-ink">Cupom / benefício:</span>{" "}
-                    da <em>conta</em> (otimizador da persona), não inventado por
-                    card — com ticket mínimo quando houver
+                    tipo da <em>conta</em> (cupom/giftback/prato); se for prato
+                    grátis, o item segue a culinária do restaurante
                   </li>
                 </ul>
               </div>
             </div>
           </div>
           <p className="text-xs text-muted">
-            Catálogo do banco · {data.user.preferred_neighborhood} · mesmos
+            Catálogo do banco · {data.user.preferred_neighborhood}                     · mesmos
             cards de O Projeto
           </p>
         </div>
@@ -210,7 +241,12 @@ export function ClientExperience() {
           </p>
         ) : (
           <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {recommendations.map((item, idx) => (
+            {recommendations.map((item, idx) => {
+              const cardBenefit = benefitForRestaurant(
+                item.restaurant.name,
+                item.restaurant.description,
+              );
+              return (
               <li key={item.restaurant.id}>
                 <Link
                   href={`/cliente/restaurante/${item.restaurant.id}`}
@@ -258,7 +294,7 @@ export function ClientExperience() {
                               : "text-xs font-extrabold text-ifood"
                           }
                         >
-                          {benefitUi.title}
+                          {cardBenefit.title}
                         </p>
                         <p
                           className={
@@ -267,7 +303,7 @@ export function ClientExperience() {
                               : "text-[11px] font-semibold text-muted"
                           }
                         >
-                          {benefitUi.detail}
+                          {cardBenefit.detail}
                         </p>
                       </div>
                     </div>
@@ -277,7 +313,8 @@ export function ClientExperience() {
                   </div>
                 </Link>
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
       </section>

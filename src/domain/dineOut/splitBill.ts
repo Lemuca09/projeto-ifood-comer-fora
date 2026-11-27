@@ -18,7 +18,7 @@ export type SplitShare = {
   itemIds: string[];
 };
 
-/** Assentos da mesa — sem nomes inventados ao convidar. */
+/** Assentos da mesa - sem nomes inventados ao convidar. */
 export function buildTableGuests(partySize: number): Omit<
   SplitGuest,
   "invited" | "paid"
@@ -43,7 +43,7 @@ export function buildTableGuests(partySize: number): Omit<
   return guests;
 }
 
-/** @deprecated use buildTableGuests — mantido para imports antigos */
+/** @deprecated use buildTableGuests - mantido para imports antigos */
 export const DEMO_GUESTS = buildTableGuests(6);
 
 export function splitInviteUrl(params: {

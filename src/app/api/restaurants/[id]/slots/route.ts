@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * Horários livres de um restaurante (ground truth).
- * Usado pelo ReserveConfirmSheet — não passa pelo ranking/discovery.
+ * Usado pelo ReserveConfirmSheet - não passa pelo ranking/discovery.
  */
 export async function GET(
   request: Request,

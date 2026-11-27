@@ -49,7 +49,7 @@ export type UserStrategyInput = {
   partySizeMode?: "1" | "2" | "4+";
   comerForaVisits90d?: number;
   avgMarginPct?: number;
-  /** Sazonalidade (feriado, salário, weekday) — define timing e intensidade. */
+  /** Sazonalidade (feriado, salário, weekday) - define timing e intensidade. */
   seasonality?: SeasonalityContext;
 };
 
@@ -225,11 +225,11 @@ export function pickEfficientUserStrategy(
       spendBefore: input.spendBefore,
       cannibalization: 0,
       label: "Notificação orgânica (sem desconto)",
-      reason: "Lembrete sem custo — útil em VIP estável e baixo churn.",
+      reason: "Lembrete sem custo - útil em VIP estável e baixo churn.",
     }),
   );
 
-  // —— Cupons com trava proporcional ao valor (intensidade sazonal) ——
+  // -- Cupons com trava proporcional ao valor (intensidade sazonal) --
   const rawTicketCoupon =
     (14 + rnd() * 10 + (input.frictionReason === "preco" ? 5 : 0)) * intensity;
   const gatedTicket = gateCouponBySpend(rawTicketCoupon, avgTicket);
@@ -304,7 +304,7 @@ export function pickEfficientUserStrategy(
     );
   }
 
-  // —— Prato grátis do favorito ——
+  // -- Prato grátis do favorito --
   const topDish = input.favoriteDishes?.[0];
   if (topDish) {
     const dishCost = topDish.typicalPriceBrl;
@@ -359,7 +359,7 @@ export function pickEfficientUserStrategy(
       spendBefore: input.spendBefore,
       cannibalization: 0.04,
       label: "Giftback de retenção",
-      reason: "Crédito pós-visita — forte em VIP sem canibalizar preço cheio.",
+      reason: "Crédito pós-visita - forte em VIP sem canibalizar preço cheio.",
     }),
   );
 
@@ -385,7 +385,7 @@ export function pickEfficientUserStrategy(
       label: "Giftback progressivo",
       reason:
         input.partySizeMode === "4+"
-          ? "Escala com mesa 4+ — split e recorrência de grupo."
+          ? "Escala com mesa 4+ - split e recorrência de grupo."
           : "Constrói 2ª/3ª visita em novos e ocasionais.",
     }),
   );

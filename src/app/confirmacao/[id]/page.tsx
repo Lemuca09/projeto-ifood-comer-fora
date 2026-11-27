@@ -99,7 +99,7 @@ export default async function ConfirmacaoPage({
                       dateStyle: "short",
                       timeStyle: "short",
                     })
-                  : "—"}
+                  : "-"}
               </p>
             </div>
           </div>

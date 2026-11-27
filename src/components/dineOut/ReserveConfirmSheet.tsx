@@ -86,7 +86,7 @@ export function ReserveConfirmSheet({
       setAvailable(false);
       setSlot(null);
       try {
-        // Slots só deste restaurante — evita pegar horário de outro lugar no ranking.
+        // Slots só deste restaurante - evita pegar horário de outro lugar no ranking.
         const res = await fetch(
           `/api/restaurants/${restaurantId}/slots?partySize=${size}`,
         );
@@ -297,7 +297,8 @@ export function ReserveConfirmSheet({
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[10px] font-bold uppercase text-muted">
-                Benefício progressivo · {partySize} pessoas
+                Benefício do otimizador · {partySize}{" "}
+                {partySize === 1 ? "pessoa" : "pessoas"}
               </p>
               <p
                 className={`mt-1 text-sm font-extrabold ${
@@ -309,14 +310,23 @@ export function ReserveConfirmSheet({
               <p className="text-[11px] font-semibold text-muted">
                 {progressive.detail}
               </p>
-              {progressive.progressiveValueBrl > 0 && (
-                <p className="mt-1 text-[11px] font-bold text-muted">
-                  Base {brl(progressive.baseValueBrl)} → grupo{" "}
-                  {brl(progressive.progressiveValueBrl)} (
-                  {progressive.multiplier.toFixed(2)}×) · ticket mín.{" "}
-                  {brl(progressive.minTicketBrl)}
-                </p>
-              )}
+              {progressive.benefitType !== "prato_gratis" &&
+                progressive.progressiveValueBrl > 0 && (
+                  <p className="mt-1 text-[11px] font-bold text-muted">
+                    Base {brl(progressive.baseValueBrl)} → grupo{" "}
+                    {brl(progressive.progressiveValueBrl)} (
+                    {progressive.multiplier.toFixed(2)}×) · ticket mín.{" "}
+                    {brl(progressive.minTicketBrl)}
+                  </p>
+                )}
+              {progressive.benefitType === "prato_gratis" &&
+                progressive.minTicketBrl > 0 && (
+                  <p className="mt-1 text-[11px] font-bold text-muted">
+                    Ticket mín. {brl(progressive.minTicketBrl)} ·{" "}
+                    {progressive.requiredCheckIns} check-in
+                    {progressive.requiredCheckIns > 1 ? "s" : ""}
+                  </p>
+                )}
             </div>
             <label className="flex shrink-0 cursor-pointer items-center gap-2 text-xs font-extrabold">
               <input
@@ -331,7 +341,7 @@ export function ReserveConfirmSheet({
           </div>
           {prefersQuietBenefits && (
             <p className="mt-2 text-[10px] font-semibold text-amber-700/90">
-              Perfil avesso à insistência — benefício opcional e discreto.
+              Perfil avesso à insistência - benefício opcional e discreto.
             </p>
           )}
         </div>

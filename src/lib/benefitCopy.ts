@@ -15,6 +15,7 @@ const CUISINE_NATURAL: Record<string, string> = {
   "Hambúrguer": "hambúrguer",
   Árabe: "comida árabe",
   Vegetariana: "comida vegetariana",
+  Café: "café e sobremesas",
 };
 
 /** Primeiro nome limpo (remove prefixo "Persona "). */
@@ -96,7 +97,7 @@ export function notificationCopy(input: {
     return `Notificação: ${nome}, cupom de desconto hoje de ${valor} em ${comida}.${trava} Agende ${horario}!`;
   }
   if (input.benefitType === "giftback") {
-    return `Notificação: ${nome}, você ganhou ${valor} de giftback para ${comida}. Use na próxima ida ao salão — que tal agendar ${horario}?`;
+    return `Notificação: ${nome}, você ganhou ${valor} de giftback para ${comida}. Use na próxima ida ao salão - que tal agendar ${horario}?`;
   }
   if (input.benefitType === "prato_gratis") {
     const prato = input.freeDishName ?? "seu prato favorito";

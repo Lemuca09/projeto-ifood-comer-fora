@@ -22,7 +22,7 @@ const COVER_CLASS: Record<ExperienceCardPayload["cover"], string> = {
 type Props = {
   neighborhood: string;
   partySize: number;
-  /** Benefício ativo da conta — só exibir se houver (não inventar). */
+  /** Benefício ativo da conta - só exibir se houver (não inventar). */
   accountBenefitLabel: string | null;
   prefersQuietBenefits?: boolean;
 };
@@ -154,7 +154,7 @@ export function LocalExperiences({
                     </p>
                   ) : (
                     <p className="pt-1 text-[11px] font-semibold text-muted">
-                      Sem mesa livre neste momento — veja outros horários no
+                      Sem mesa livre neste momento - veja outros horários no
                       salão
                     </p>
                   )}

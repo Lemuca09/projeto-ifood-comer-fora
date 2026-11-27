@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-/** Log allowlist — nunca texto bruto, prompt, canary, segredo, cookie, IP. */
+/** Log allowlist - nunca texto bruto, prompt, canary, segredo, cookie, IP. */
 export type SecureLogEntry = {
   category: "input_guard" | "output_guard" | "rate_limit" | "csrf" | "ai" | "system";
   decisao: string;

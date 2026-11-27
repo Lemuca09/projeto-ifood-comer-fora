@@ -1,6 +1,6 @@
 /**
  * Suíte determinística da guarda de entrada.
- * Holdout NÃO é usado para escrever regras — só reporta bypass/total.
+ * Holdout NÃO é usado para escrever regras - só reporta bypass/total.
  */
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";

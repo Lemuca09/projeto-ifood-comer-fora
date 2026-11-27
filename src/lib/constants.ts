@@ -40,6 +40,6 @@ export const PRICE_RANGES = [
 
 export function priceRangeLabel(range: number, style: "label" | "short" = "short"): string {
   const found = PRICE_RANGES.find((p) => p.value === range);
-  if (!found) return "—";
+  if (!found) return "-";
   return style === "label" ? found.label : found.short;
 }

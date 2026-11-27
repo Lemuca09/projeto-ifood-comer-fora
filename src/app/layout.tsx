@@ -7,7 +7,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Comer Fora",
   description:
-    "Converter delivery em visita ao salão com diagnóstico mensurável. Projeto de candidato — dados sintéticos.",
+    "Converter delivery em visita ao salão com diagnóstico mensurável. Projeto de candidato - dados sintéticos.",
 };
 
 export default function RootLayout({
@@ -18,7 +18,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <head>
-        {/* next/font/google falha no build Vercel — CSS externo no <head> */}
+        {/* next/font/google falha no build Vercel - CSS externo no <head> */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"

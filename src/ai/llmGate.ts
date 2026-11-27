@@ -1,6 +1,6 @@
 import { createHash } from "crypto";
 
-/** Cache longo + throttle — prioriza reuso e corta RPM. */
+/** Cache longo + throttle - prioriza reuso e corta RPM. */
 const CACHE_TTL_MS = 60 * 60 * 1000;
 const MIN_INTERVAL_MS = 6_000;
 const cache = new Map<string, { at: number; value: string }>();

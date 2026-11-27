@@ -11,7 +11,11 @@ import {
 import { useDemoSession } from "@/context/DemoSessionContext";
 import { useAnalyticsDashboard } from "@/context/AnalyticsDashboardContext";
 import { ReserveConfirmSheet } from "@/components/dineOut/ReserveConfirmSheet";
-import { buildMenu, inferCuisine } from "@/domain/dineOut/menu";
+import {
+  buildMenu,
+  freeDishForRestaurant,
+  inferCuisine,
+} from "@/domain/dineOut/menu";
 import { benefitCopy } from "@/lib/benefitCopy";
 import { priceRangeLabel } from "@/lib/constants";
 import { brl } from "@/components/analytics/format";
@@ -41,8 +45,8 @@ export function RestaurantDetailClient({ restaurant, initialTab }: Props) {
 
   const cover = COVER[restaurant.name.length % COVER.length];
   const cuisine = useMemo(
-    () => inferCuisine(restaurant.name),
-    [restaurant.name],
+    () => inferCuisine(restaurant.name, restaurant.description),
+    [restaurant.name, restaurant.description],
   );
   const menu = useMemo(
     () => buildMenu(cuisine, restaurant.id),
@@ -56,8 +60,22 @@ export function RestaurantDetailClient({ restaurant, initialTab }: Props) {
     );
   }, [dash, data]);
 
+  const localizedFreeDish = useMemo(() => {
+    if (!activeBenefit || activeBenefit.benefitType !== "prato_gratis") {
+      return activeBenefit?.freeDishName ?? null;
+    }
+    return freeDishForRestaurant(
+      restaurant.name,
+      restaurant.description,
+      activeBenefit.code,
+    ).name;
+  }, [activeBenefit, restaurant.name, restaurant.description]);
+
   const benefitUi = activeBenefit
-    ? benefitCopy(activeBenefit)
+    ? benefitCopy({
+        ...activeBenefit,
+        freeDishName: localizedFreeDish,
+      })
     : { title: "Benefício no salão", detail: "Carregando…", minSpendLine: null };
 
   const prefersQuietBenefits = data?.user.archetype === "push_averse";
@@ -349,7 +367,7 @@ export function RestaurantDetailClient({ restaurant, initialTab }: Props) {
                     activeBenefit.benefitValueBrl,
                   avgTicketBrl: Number(data.user.user_avg_ticket_brl),
                   minTicketBrl: activeBenefit.minTicketBrl,
-                  freeDishName: activeBenefit.freeDishName,
+                  freeDishName: localizedFreeDish,
                 }
               : null
           }

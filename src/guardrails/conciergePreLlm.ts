@@ -3,7 +3,7 @@ import { NEIGHBORHOODS } from "@/lib/constants";
 
 /**
  * Pipeline hardcoded pré-LLM (AGENTS.md §7.1–7.2 + spec Concierge).
- * NUNCA envia input bruto ao Claude — short-circuit em ataque/fora de escopo.
+ * NUNCA envia input bruto ao Claude - short-circuit em ataque/fora de escopo.
  */
 
 const CUISINES = [
@@ -49,7 +49,7 @@ export type PreLlmResult = {
   allowLlm: boolean;
   guard: GuardResult;
   entities: ConciergeEntities;
-  /** Texto limpo e truncado — único permitido no payload do modelo. */
+  /** Texto limpo e truncado - único permitido no payload do modelo. */
   safeQuery: string;
   /** Resposta padrão se bloquear (sem revelar regra/score). */
   safeRedirectAnswer: string;
@@ -57,7 +57,7 @@ export type PreLlmResult = {
 };
 
 export const SAFE_REDIRECT_ANSWER =
-  "Posso te ajudar a escolher onde jantar agora. Me diga o tipo de comida, o horário ou o bairro — mostro opções com mesa disponível e benefícios reais da sua conta.";
+  "Posso te ajudar a escolher onde jantar agora. Me diga o tipo de comida, o horário ou o bairro - mostro opções com mesa disponível e benefícios reais da sua conta.";
 
 function extractEntities(text: string): ConciergeEntities {
   const lower = text.toLowerCase();
@@ -69,7 +69,7 @@ function extractEntities(text: string): ConciergeEntities {
   const neighborhood = NEIGHBORHOODS.find((n) =>
     lower.includes(n.toLowerCase()),
   );
-  // Exige contexto de grupo — evita capturar "às 20", "em 15 minutos", etc.
+  // Exige contexto de grupo - evita capturar "às 20", "em 15 minutos", etc.
   const partyMatch =
     text.match(
       /\b(?:grupo\s+de|mesa\s+para|para)\s+(\d{1,2})\b/i,

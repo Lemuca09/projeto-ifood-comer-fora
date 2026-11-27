@@ -302,7 +302,7 @@ export function SplitBillSheet({
                     />
                   ) : (
                     <span className="text-sm font-extrabold text-ifood">
-                      {on ? brl(share?.amountBrl ?? 0) : "—"}
+                      {on ? brl(share?.amountBrl ?? 0) : "-"}
                     </span>
                   )}
                 </div>
@@ -334,7 +334,7 @@ export function SplitBillSheet({
                     }))
                   }
                 >
-                  <option value="">—</option>
+                  <option value="">-</option>
                   {selected.map((id) => {
                     const g = guests.find((x) => x.id === id);
                     return (

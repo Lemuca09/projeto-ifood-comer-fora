@@ -1,6 +1,6 @@
 import type { CatalogRestaurant } from "@/services/restaurants";
 
-/** Badges de ocasião — curadoria editorial (não inventam preço/slot). */
+/** Badges de ocasião - curadoria editorial (não inventam preço/slot). */
 export const EXPERIENCE_BADGES = [
   "Date Romântico",
   "Turismo & História",
@@ -34,7 +34,7 @@ function hasTag(r: CatalogRestaurant, tag: string): boolean {
 }
 
 /**
- * Trilhas editoriais de Santos — copy curada; o estabelecimento
+ * Trilhas editoriais de Santos - copy curada; o estabelecimento
  * e a disponibilidade vêm sempre do catálogo/slots reais.
  */
 export const EXPERIENCE_TRAILS: ExperienceTrail[] = [
@@ -43,7 +43,7 @@ export const EXPERIENCE_TRAILS: ExperienceTrail[] = [
     badge: "Date Romântico",
     title: "Agende seu date em {name}",
     story:
-      "Mesa a dois com clima de orla santista — luz baixa, conversa longa e o Centro Histórico a um passeio.",
+      "Mesa a dois com clima de orla santista - luz baixa, conversa longa e o Centro Histórico a um passeio.",
     cover: "sunset",
     priority: 10,
     match: (r) =>
@@ -55,7 +55,7 @@ export const EXPERIENCE_TRAILS: ExperienceTrail[] = [
     badge: "Frutos do Mar",
     title: "Roteiro de frutos do mar em {name}",
     story:
-      "Peixe fresco e brisa da baía — clássico da orla para quem quer sentir Santos no prato.",
+      "Peixe fresco e brisa da baía - clássico da orla para quem quer sentir Santos no prato.",
     cover: "seafood",
     priority: 20,
     match: (r) =>
@@ -68,7 +68,7 @@ export const EXPERIENCE_TRAILS: ExperienceTrail[] = [
     badge: "Patrimônio Local",
     title: "Clássico da cidade: {name}",
     story:
-      "Casa com história de bairro — o tipo de mesa que os santistas indicam quando alguém pergunta “onde é bom de verdade?”.",
+      "Casa com história de bairro - o tipo de mesa que os santistas indicam quando alguém pergunta “onde é bom de verdade?”.",
     cover: "heritage",
     priority: 30,
     match: (r) =>
@@ -81,7 +81,7 @@ export const EXPERIENCE_TRAILS: ExperienceTrail[] = [
     badge: "Turismo & História",
     title: "Pausa gastronômica em {name}",
     story:
-      "Parada perfeita depois do porto, do museu ou do bondinho — turismo com mesa reservada, sem fila na porta.",
+      "Parada perfeita depois do porto, do museu ou do bondinho - turismo com mesa reservada, sem fila na porta.",
     cover: "harbor",
     priority: 40,
     match: (r) =>
@@ -94,7 +94,7 @@ export const EXPERIENCE_TRAILS: ExperienceTrail[] = [
     badge: "Almoço em Família",
     title: "Mesa generosa em {name}",
     story:
-      "Porções para compartilhar e ritmo de domingo — ideal quando a família inteira quer sair sem complicar.",
+      "Porções para compartilhar e ritmo de domingo - ideal quando a família inteira quer sair sem complicar.",
     cover: "family",
     priority: 50,
     match: (r) =>
@@ -107,7 +107,7 @@ export const EXPERIENCE_TRAILS: ExperienceTrail[] = [
     badge: "Noite na Orla",
     title: "Noite na orla começa em {name}",
     story:
-      "Do pôr do sol à sobremesa — salão com vibe de calçadão e horário que cabe no seu jantar.",
+      "Do pôr do sol à sobremesa - salão com vibe de calçadão e horário que cabe no seu jantar.",
     cover: "night",
     priority: 60,
     match: (r) =>

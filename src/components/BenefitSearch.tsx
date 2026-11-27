@@ -103,7 +103,7 @@ export function BenefitSearch() {
   if (!data) return null;
 
   return (
-    <section className="if-card space-y-3 p-4 sm:p-5">
+    <section id="concierge" className="if-card scroll-mt-24 space-y-3 p-4 sm:p-5">
       <div>
         <h2 className="font-title text-lg font-extrabold">
           Pergunte onde jantar

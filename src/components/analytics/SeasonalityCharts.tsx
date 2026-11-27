@@ -12,6 +12,8 @@ import {
   YAxis,
 } from "recharts";
 import { useAnalyticsDashboard } from "@/context/AnalyticsDashboardContext";
+import { ChartTitle } from "@/components/analytics/MetricInfoTip";
+import { M } from "@/components/analytics/metricInfoHelp";
 
 function toPct(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value)
@@ -19,10 +21,14 @@ function toPct(value: unknown): number {
     : 0;
 }
 
-export function SeasonalityCharts() {
+type Props = {
+  /** Qual gráfico renderizar nesta instância */
+  focus?: "demand" | "retention" | "all";
+};
+
+export function SeasonalityCharts({ focus = "all" }: Props) {
   const { dash, refresh } = useAnalyticsDashboard();
 
-  // Dashboard em memória pode ser anterior ao campo prato_gratis (HMR).
   useEffect(() => {
     if (!dash?.retention?.length) return;
     if (dash.retention.some((r) => typeof r.prato_gratis !== "number")) {
@@ -42,136 +48,187 @@ export function SeasonalityCharts() {
     controle: toPct(r.controle),
   }));
 
+  const showDemand = focus === "demand" || focus === "all";
+  const showRetention = focus === "retention" || focus === "all";
+
   return (
     <div className="space-y-4">
-      <div className="rounded-if border border-ifood/20 bg-ifood-soft/50 px-4 py-3 text-sm">
-        <p className="text-[10px] font-bold uppercase text-ifood">
-          Sazonalidade agora · intensidade de benefício ×
-          {ctx.benefitIntensityMult}
-        </p>
-        <p className="mt-1 font-semibold text-ink">{ctx.summary}</p>
-        <p className="mt-1 text-xs text-muted">
-          {ctx.isPaydayWindow
-            ? "Janela salário (dias 5–15): maior poder de compra → mais incentivo aos users."
-            : ctx.isTightBudget
-              ? "Fora da janela de salário: incentivo mais contido (bolso apertado)."
-              : "Calendário sem pico de salário."}
-          {ctx.holidayName ? ` · ${ctx.holidayName}` : ""}
-          {ctx.preferLowDiscount
-            ? " · Feriado de pico: orgânico / giftback vs cupom agressivo."
-            : ctx.isPaydayWindow
-              ? " · Preferência: cupom / giftback / prato com trava de ticket."
-              : " · Preferência: estímulo pago se o salão estiver fraco."}
-        </p>
-      </div>
+      {showDemand && (
+        <div className="flex flex-wrap items-center gap-2 rounded-if border border-ifood/15 bg-ifood-soft/40 px-3 py-2 text-[11px] font-semibold text-ink">
+          <span className="text-ifood">Agora</span>
+          <span className="text-muted">·</span>
+          <span>{ctx.summary}</span>
+          <span className="text-muted">
+            · intensidade ×{ctx.benefitIntensityMult}
+          </span>
+        </div>
+      )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <section className="if-card p-4 sm:p-5">
-          <h2 className="font-title text-lg font-extrabold">
-            Quando as pessoas saem para comer
-          </h2>
-          <p className="mt-1 text-xs text-muted">
-            1) saídas no período → 2) efeito do weekday → 3) efeito de
-            feriado/salário → 4) tendência no que sobra. Verde = calendário
-            (Natal, feriados, dias 5–15).
-          </p>
-          <div className="mt-4 h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={series}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: 10 }}
-                  interval="preserveStartEnd"
-                />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="value"
-                  name="Movimento observado"
-                  stroke="#ea1d2c"
-                  dot={false}
-                  strokeWidth={2}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="trend"
-                  name="Tendência estimada"
-                  stroke="#3f8efc"
-                  dot={false}
-                  strokeWidth={2}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="seasonal"
-                  name="Efeito do dia (weekday)"
-                  stroke="#f5a623"
-                  dot={false}
-                  strokeWidth={1.5}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="calendar"
-                  name="Feriado / salário"
-                  stroke="#50a773"
-                  dot={false}
-                  strokeWidth={1.5}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </section>
+      <div
+        className={
+          showDemand && showRetention
+            ? "grid gap-4 lg:grid-cols-2"
+            : "grid gap-4"
+        }
+      >
+        {showDemand && (
+          <section className="rounded-if-lg border border-[var(--ifdl-color-border)] bg-white p-4 shadow-[var(--ifdl-shadow-card)] sm:p-5">
+            <ChartTitle
+              title="Demanda no calendário"
+              info={{
+                measures: "Movimento diário de saída para comer fora.",
+                formula:
+                  "Série = tendência + efeito weekday + efeito feriado/salário + ruído (seed)",
+                variables:
+                  "value · trend · seasonal · calendar · demandBoost",
+                premise: "Comer Fora 2.0 sob calendário (feriados / salário BR)",
+                columns: [
+                  {
+                    name: "Movimento (value)",
+                    detail:
+                      "Série sintética diária: tendência + weekend/monday + seno weekday + demandBoost de calendário + ruído da seed.",
+                  },
+                  {
+                    name: "Tendência (trend)",
+                    detail:
+                      "Componente suave após remover efeitos de weekday e calendário da série observada.",
+                  },
+                  {
+                    name: "Weekday (seasonal)",
+                    detail:
+                      "Efeito do dia da semana: média do DOW − média geral, estimado a partir da série gerada.",
+                  },
+                  {
+                    name: "Feriado / salário (calendar)",
+                    detail:
+                      "Residual de calendário (demandBoost de getSeasonalityContext: payday, feriado). Não é dado real de Santos.",
+                  },
+                  M.seed,
+                ],
+              }}
+            />
+            <div className="mt-4 h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={series}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 10 }}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="value"
+                    name="Movimento"
+                    stroke="#ea1d2c"
+                    dot={false}
+                    strokeWidth={2}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="trend"
+                    name="Tendência"
+                    stroke="#a3a3a3"
+                    dot={false}
+                    strokeWidth={2}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="seasonal"
+                    name="Weekday"
+                    stroke="#f5a623"
+                    dot={false}
+                    strokeWidth={1.5}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="calendar"
+                    name="Feriado / salário"
+                    stroke="#50a773"
+                    dot={false}
+                    strokeWidth={1.5}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
+        )}
 
-        <section className="if-card p-4 sm:p-5">
-          <h2 className="font-title text-lg font-extrabold">
-            Quem continua voltando
-          </h2>
-          <p className="mt-1 text-xs text-muted">
-            % ainda ativos após 7, 30 e 60 dias — cupom vs giftback vs prato
-            grátis vs quem não recebeu incentivo.
-          </p>
-          <div className="mt-4 h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={retention}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                <XAxis dataKey="day" tick={{ fontSize: 11 }} unit="d" />
-                <YAxis tick={{ fontSize: 11 }} unit="%" />
-                <Tooltip />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="cupom"
-                  name="Cupom"
-                  stroke="#ea1d2c"
-                  strokeWidth={2}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="giftback"
-                  name="Giftback"
-                  stroke="#50a773"
-                  strokeWidth={2}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="prato_gratis"
-                  name="Prato grátis"
-                  stroke="#f5a623"
-                  strokeWidth={2}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="controle"
-                  name="Sem incentivo"
-                  stroke="#a3a3a3"
-                  strokeWidth={2}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </section>
+        {showRetention && (
+          <section className="rounded-if-lg border border-[var(--ifdl-color-border)] bg-white p-4 shadow-[var(--ifdl-shadow-card)] sm:p-5">
+            <ChartTitle
+              title="Retenção por incentivo"
+              info={{
+                measures: "% ainda ativos após 7 / 30 / 60 dias.",
+                formula:
+                  "Curvas sintéticas por tipo de benefício vs controle sem incentivo (decay por seed)",
+                variables: "cupom · giftback · prato_gratis · controle · day",
+                premise: "Com benefícios vs sem incentivo (controle)",
+                columns: [
+                  {
+                    name: "Dia (eixo X)",
+                    detail:
+                      "Horizonte sintético de retenção (ex. 7 / 30 / 60). Não é cohort real de app.",
+                  },
+                  {
+                    name: "cupom / giftback / prato",
+                    detail:
+                      "Curvas de retenção geradas por tipo de benefício (decay + ruído da seed). Representam % ainda ativos.",
+                  },
+                  {
+                    name: "controle",
+                    detail:
+                      "Curva sem incentivo pago. Baseline sintética para comparar lift de retenção.",
+                  },
+                  M.benefitType,
+                  M.seed,
+                ],
+              }}
+            />
+            <div className="mt-4 h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={retention}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                  <XAxis dataKey="day" tick={{ fontSize: 11 }} unit="d" />
+                  <YAxis tick={{ fontSize: 11 }} unit="%" />
+                  <Tooltip />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="cupom"
+                    name="Cupom"
+                    stroke="#ea1d2c"
+                    strokeWidth={2}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="giftback"
+                    name="Giftback"
+                    stroke="#50a773"
+                    strokeWidth={2}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="prato_gratis"
+                    name="Prato grátis"
+                    stroke="#f5a623"
+                    strokeWidth={2}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="controle"
+                    name="Sem incentivo"
+                    stroke="#a3a3a3"
+                    strokeWidth={2}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );

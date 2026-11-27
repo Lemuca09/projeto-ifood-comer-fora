@@ -7,6 +7,8 @@ import type { EnrichedUser } from "@/services/analyticsEngine";
 import { useAnalyticsDashboard } from "@/context/AnalyticsDashboardContext";
 import { UserDetailModal } from "@/components/analytics/UserDetailModal";
 import { brl, pct } from "@/components/analytics/format";
+import { ChartTitle } from "@/components/analytics/MetricInfoTip";
+import { M } from "@/components/analytics/metricInfoHelp";
 
 type SortKey =
   | "display_name"
@@ -72,16 +74,44 @@ export function UsersMetricsTable() {
   if (!dash) return null;
 
   return (
-    <section className="if-card p-4 sm:p-5">
+    <section className="rounded-if-lg border border-[var(--ifdl-color-border)] bg-white p-4 shadow-[var(--ifdl-shadow-card)] sm:p-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="font-title text-lg font-extrabold">
-            Cada pessoa e a estratégia escolhida
-          </h2>
-          <p className="mt-1 text-xs text-muted">
-            Clique em uma linha para ver o relatório individual (gráficos + copy
-            pronta)
-          </p>
+          <ChartTitle
+            title="Personas e estratégias"
+            info={{
+              measures:
+                "Uma linha por persona sintética: cluster, benefício escolhido e impacto estimado no gasto.",
+              formula:
+                "pickEfficientUserStrategy · spendAfter = spendBefore × (1+lift)",
+              variables:
+                "RFM · couponRate · avgMarginPct · recencyDays · sentiment · seed",
+              premise:
+                "Nada é sorteio puro: o RNG é fixo pela seed da demo. Clique na linha para o detalhe.",
+              columns: [
+                {
+                  name: "Usuário",
+                  detail:
+                    "Nome e código da persona sintética gerada no seed. Não é cliente real.",
+                },
+                M.spendBefore,
+                M.spendAfter,
+                M.cluster,
+                {
+                  name: "Estratégia",
+                  detail:
+                    "Texto + retorno est. do pickEfficientUserStrategy: escolhe cupom/giftback/prato/nenhum por ROI estimado, cluster e sazonalidade.",
+                },
+                M.benefitType,
+                M.benefitValueBrl,
+                M.minTicketBrl,
+                M.spendDeltaPct,
+                M.marginAfter,
+                M.churnRisk,
+                M.seed,
+              ],
+            }}
+          />
         </div>
         <div className="flex flex-wrap gap-2">
           <input

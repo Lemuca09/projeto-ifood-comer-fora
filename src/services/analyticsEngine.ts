@@ -167,7 +167,7 @@ const REVIEWS = [
   { text: "Qualidade caiu no último pedido presencial.", sentiment: "negativo" as const, reason: "qualidade" as const },
   { text: "Voltei só porque tinha promoção no horário morto.", sentiment: "neutro" as const, reason: "preco" as const },
   { text: "Cupom com ticket mínimo fez sentido no jantar.", sentiment: "positivo" as const, reason: "nenhum" as const },
-  { text: "Não precisava de desconto — só lembrete do horário.", sentiment: "positivo" as const, reason: "nenhum" as const },
+  { text: "Não precisava de desconto - só lembrete do horário.", sentiment: "positivo" as const, reason: "nenhum" as const },
 ];
 
 function enrichFromPersona(u: SyntheticUser, rnd: () => number): Omit<

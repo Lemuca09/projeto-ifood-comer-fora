@@ -44,6 +44,7 @@ export function VisitJourneyClient({
   const [toast, setToast] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
+  // Bootstrap da visita (localStorage).
   useEffect(() => {
     let v = getVisit(reservationId);
     if (!v) {
@@ -66,10 +67,25 @@ export function VisitJourneyClient({
       });
     }
     setVisit(v);
+  }, [
+    reservationId,
+    restaurantId,
+    restaurantName,
+    neighborhood,
+    slotStartsAt,
+    partySize,
+  ]);
 
-    const hasPreorder = v.lines.some((l) => l.source === "preorder");
-    // Demo: após reserva+pré-pedido → escanear totem → cozinha.
-    if (v.phase === "confirmed" && hasPreorder) {
+  const phase = visit?.phase;
+  const kitchenNotifiedAt = visit?.kitchenNotifiedAt;
+  const hasPreorder =
+    visit?.lines.some((l) => l.source === "preorder") ?? false;
+
+  // Demo: confirmed → totem → cozinha (reage a cada mudança de fase).
+  useEffect(() => {
+    if (!phase) return;
+
+    if (phase === "confirmed" && hasPreorder) {
       const t = window.setTimeout(() => {
         const next = setVisitPhase(reservationId, "totem_scanned");
         if (next) setVisit(next);
@@ -79,7 +95,8 @@ export function VisitJourneyClient({
       }, 1400);
       return () => window.clearTimeout(t);
     }
-    if (v.phase === "totem_scanned" && !v.kitchenNotifiedAt) {
+
+    if (phase === "totem_scanned" && !kitchenNotifiedAt) {
       const t = window.setTimeout(() => {
         const next = setVisitPhase(reservationId, "kitchen_started", {
           kitchenNotifiedAt: new Date().toISOString(),
@@ -88,17 +105,10 @@ export function VisitJourneyClient({
         setToast(
           "A cozinha já iniciou o preparo do seu pedido antecipado. Faça check-in ao chegar.",
         );
-      }, 1800);
+      }, 1600);
       return () => window.clearTimeout(t);
     }
-  }, [
-    reservationId,
-    restaurantId,
-    restaurantName,
-    neighborhood,
-    slotStartsAt,
-    partySize,
-  ]);
+  }, [phase, kitchenNotifiedAt, hasPreorder, reservationId]);
 
   function addCheckIn(guestId: string, guestName: string) {
     startTransition(() => {

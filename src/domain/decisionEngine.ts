@@ -112,7 +112,7 @@ export function evaluateDecision(
       "WAIT_LT_15",
       "Fila < 15 min",
       "rejected",
-      `Espera ${metrics.rest_current_wait_min} min — atrito alto para quem odeia fila.`,
+      `Espera ${metrics.rest_current_wait_min} min - atrito alto para quem odeia fila.`,
     );
   }
 
@@ -122,7 +122,7 @@ export function evaluateDecision(
       "EXTERNAL_FRICTION",
       "Atrito externo (chuva/trânsito/deslocamento)",
       "blocked",
-      `Índice ${friction.toFixed(2)} ≥ 0.55 — clima/trânsito desencorajam saída.`,
+      `Índice ${friction.toFixed(2)} ≥ 0.55 - clima/trânsito desencorajam saída.`,
     );
   } else {
     push(
@@ -156,7 +156,7 @@ export function evaluateDecision(
       "IDLE_CAPACITY",
       "Salão com capacidade ociosa",
       "approved",
-      `${metrics.rest_idle_capacity_pct}% ocioso — bom momento para Comer Fora.`,
+      `${metrics.rest_idle_capacity_pct}% ocioso - bom momento para Comer Fora.`,
     );
   } else {
     push(
@@ -190,7 +190,7 @@ export function evaluateDecision(
       "SPEED_WAIT",
       "Perfil velocidade × fila",
       "blocked",
-      "Usuário odeia esperar — fila alta bloqueia recomendação forte.",
+      "Usuário odeia esperar - fila alta bloqueia recomendação forte.",
     );
   }
 
@@ -207,9 +207,9 @@ export function evaluateDecision(
 
   const summary = recommend
     ? silent
-      ? "Recomendação suave de Comer Fora (modo silencioso — sem notificação invasiva)."
+      ? "Recomendação suave de Comer Fora (modo silencioso - sem notificação invasiva)."
       : "Recomendação ativa de converter delivery → salão."
-    : "Não recomendar saída agora — atrito ou risco de rejeição alto.";
+    : "Não recomendar saída agora - atrito ou risco de rejeição alto.";
 
   return {
     kpis: {

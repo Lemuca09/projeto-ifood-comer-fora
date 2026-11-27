@@ -25,7 +25,7 @@ export type ExperienceCardPayload = {
 
 /**
  * Monta a vitrine editorial com slots e promo 100% ground truth.
- * Benefício da conta do usuário NÃO é inventado aqui — a UI decide
+ * Benefício da conta do usuário NÃO é inventado aqui - a UI decide
  * se exibe o benefício ativo da sessão.
  */
 export async function buildLocalExperienceCards(

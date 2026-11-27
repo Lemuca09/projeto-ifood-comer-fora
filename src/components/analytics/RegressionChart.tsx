@@ -11,6 +11,8 @@ import {
   YAxis,
 } from "recharts";
 import { useAnalyticsDashboard } from "@/context/AnalyticsDashboardContext";
+import { ChartTitle } from "@/components/analytics/MetricInfoTip";
+import { M } from "@/components/analytics/metricInfoHelp";
 
 const FEATURE_LABELS: Record<string, string> = {
   frequencia: "Quantas vezes volta",
@@ -20,7 +22,7 @@ const FEATURE_LABELS: Record<string, string> = {
   beneficio_brl: "Valor do benefício",
   sensibilidade_preco: "Sensibilidade a preço",
   visitas_comer_fora: "Visitas Comer Fora (90d)",
-  nps: "NPS recente",
+  nps: "Probabilidade de recomendação",
 };
 
 export function RegressionChart() {
@@ -37,15 +39,34 @@ export function RegressionChart() {
     .sort((a, b) => Math.abs(b.beta) - Math.abs(a.beta));
 
   return (
-    <section className="if-card flex max-h-[420px] flex-col p-4 sm:p-5 xl:max-h-[480px]">
-      <h2 className="font-title text-lg font-extrabold">
-        O que mais puxa o lucro incremental
-      </h2>
-      <p className="mt-1 text-xs text-muted">
-        Efeito sobre a <strong className="font-semibold text-ink">margem ganha</strong>{" "}
-        (depois − antes), não sobre o gasto total. Verdes sobem; vermelhas pressionam.
-        (R² = {regression.r2})
-      </p>
+    <section className="flex max-h-[420px] flex-col rounded-if-lg border border-[var(--ifdl-color-border)] bg-white p-4 shadow-[var(--ifdl-shadow-card)] sm:p-5 xl:max-h-[480px]">
+      <ChartTitle
+        title="O que puxa o lucro incremental"
+        info={{
+          measures: `Betas da regressão sobre margem ganha (R² = ${regression.r2}). Barra = peso da feature em puxar (ou pressionar) o lucro incremental.`,
+          formula:
+            "y = marginAfter − marginBefore; X = features padronizadas; OLS → betas e p-values",
+          variables:
+            "frequency · couponRate · recencyDays · churnRisk · benefitValueBrl · priceSensitivity · comerForaVisits90d · lastNpsScore",
+          premise:
+            "Antes × depois · verdes sobem margem; vermelhas pressionam. Dados sintéticos da seed.",
+          columns: [
+            M.frequency,
+            M.couponRate,
+            M.recencyDays,
+            M.churnRisk,
+            M.benefitValueBrl,
+            M.priceSensitivity,
+            M.comerForaVisits90d,
+            M.lastNps,
+            {
+              name: "beta / p-value",
+              detail:
+                "Coeficiente OLS da feature em y (margem incremental). p-value da significância no modelo sintético da demo.",
+            },
+          ],
+        }}
+      />
       <div className="mt-4 min-h-0 flex-1 w-full" style={{ height: 280 }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart

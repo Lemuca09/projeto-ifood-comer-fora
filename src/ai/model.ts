@@ -1,5 +1,5 @@
 /**
- * Modelos Claude por tarefa — Haiku barato para JSON curto;
+ * Modelos Claude por tarefa - Haiku barato para JSON curto;
  * Sonnet só no ranking/concierge (qualidade de escolha).
  * IDs datados: o alias curto `claude-sonnet-4-5` retornou 404 na API.
  */

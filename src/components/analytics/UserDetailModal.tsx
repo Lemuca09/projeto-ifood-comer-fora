@@ -186,7 +186,7 @@ export function UserDetailModal({
                 CF {user.comerForaVisits90d} visitas
               </span>
               <span className="rounded-full bg-page px-2 py-0.5 text-[10px] font-bold text-muted">
-                NPS {user.lastNpsScore}
+                Prob. recomendação {user.lastNpsScore}
               </span>
               <span className="rounded-full bg-page px-2 py-0.5 text-[10px] font-bold text-muted">
                 margem {user.avgMarginPct}%
@@ -336,7 +336,8 @@ export function UserDetailModal({
           <p className="font-bold">Sentimento / causa raiz</p>
           <p className="mt-1 text-muted">&ldquo;{user.reviewText}&rdquo;</p>
           <p className="mt-1">
-            Sentimento {user.sentiment} · NPS {user.lastNpsScore} · atrito:{" "}
+            Sentimento {user.sentiment} · Prob. recomendação{" "}
+            {user.lastNpsScore} · atrito:{" "}
             {user.frictionReason} · risco de parar {user.churnRisk}%
           </p>
           <p className="mt-1 text-muted">

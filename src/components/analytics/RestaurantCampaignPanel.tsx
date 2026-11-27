@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { useAnalyticsDashboard } from "@/context/AnalyticsDashboardContext";
 import { NEIGHBORHOODS } from "@/lib/constants";
 import { brl, pct } from "@/components/analytics/format";
+import { ChartTitle } from "@/components/analytics/MetricInfoTip";
+import { M } from "@/components/analytics/metricInfoHelp";
 
 type Plan = {
   beneficio: string;
@@ -39,15 +41,43 @@ export function RestaurantCampaignPanel() {
   }
 
   return (
-    <section className="if-card flex max-h-[420px] flex-col p-4 sm:p-5 xl:max-h-[480px]">
+    <section className="flex max-h-[420px] flex-col rounded-if-lg border border-[var(--ifdl-color-border)] bg-white p-4 shadow-[var(--ifdl-shadow-card)] sm:p-5 xl:max-h-[480px]">
       <div className="shrink-0">
-        <h2 className="font-title text-lg font-extrabold">
-          Plano para restaurantes parceiros
-        </h2>
-        <p className="mt-1 text-xs text-muted">
-          Melhor incentivo por restaurante: ociosidade, clusters e sazonalidade
-          (feriado lotado = mais leve; salário dias 5–15 = mais incentivo)
-        </p>
+        <ChartTitle
+          title="Plano para parceiros"
+          info={{
+            measures: "Incentivo sugerido por restaurante (GMV before → after).",
+            formula:
+              "gmvAfter = gmvBefore × (1 + lift); lift do otimizador B2B + sazonalidade",
+            variables:
+              "idle_capacity_pct · lowDemandDeltaPct · neighborhood · clusterMix · seasonality",
+            premise: "Horário fraco / ociosidade × Comer Fora + benefícios",
+            columns: [
+              {
+                name: "Restaurante",
+                detail:
+                  "Parceiro do catálogo Supabase (nome/bairro reais do seed de restaurantes). Sem inventar estabelecimento.",
+              },
+              {
+                name: "GMV before / after",
+                detail:
+                  "Before: base sintética (ticket×faixa + seed). After: before × (1 + lift da estratégia B2B, com jitter da seed).",
+              },
+              {
+                name: "Melhor estratégia",
+                detail:
+                  "pickEfficientRestaurantStrategy: cupom/giftback/prato/orgânico conforme ociosidade, mix de clusters vizinhos e calendário.",
+              },
+              M.idleCapacity,
+              M.lowDemandDelta,
+              {
+                name: "Retorno",
+                detail:
+                  "ROI / lift estimado da estratégia B2B escolhida para aquele restaurante (otimizador + sazonalidade).",
+              },
+            ],
+          }}
+        />
       </div>
 
       <div className="mt-4 min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">

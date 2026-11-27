@@ -9,7 +9,7 @@ export const GUARD_THRESHOLDS = {
 
 /** Abuso + orçamento de tokens [PREMISSA] AGENTS §7.5 */
 export const ABUSE_LIMITS = {
-  /** RPM baixo — demo não precisa de rajada. */
+  /** RPM baixo - demo não precisa de rajada. */
   aiPerSessionPerMin: 2,
   aiPerIpPerMin: 4,
   aiPerSessionTotal: 8,
