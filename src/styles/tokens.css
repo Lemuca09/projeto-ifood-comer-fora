@@ -34,6 +34,8 @@
   --ifdl-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.04);
   --ifdl-shadow-float: 0 8px 24px rgba(0, 0, 0, 0.12);
 
-  --ifdl-font-title: var(--font-title), "Segoe UI", system-ui, sans-serif;
-  --ifdl-font-body: var(--font-body), "Segoe UI", system-ui, sans-serif;
+  --font-title: "Nunito", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Nunito Sans", "Segoe UI", system-ui, sans-serif;
+  --ifdl-font-title: var(--font-title);
+  --ifdl-font-body: var(--font-body);
 }
