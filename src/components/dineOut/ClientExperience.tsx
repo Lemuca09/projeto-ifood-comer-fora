@@ -5,9 +5,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useDemoSession } from "@/context/DemoSessionContext";
 import { useAnalyticsDashboard } from "@/context/AnalyticsDashboardContext";
 import { BenefitSearch } from "@/components/BenefitSearch";
+import { LocalExperiences } from "@/components/dineOut/LocalExperiences";
 import { buildClientHistoryFromCatalog } from "@/domain/dineOut/clientView";
 import { benefitCopy } from "@/lib/benefitCopy";
+import { partySizeFromMode } from "@/lib/dineTime";
 import { priceRangeLabel } from "@/lib/constants";
+import type { PartySizeMode } from "@/domain/personas";
 import type { CatalogRestaurant } from "@/services/restaurants";
 
 const COVER = [
@@ -218,6 +221,21 @@ export function ClientExperience() {
           </ul>
         )}
       </section>
+
+      <LocalExperiences
+        neighborhood={data.user.preferred_neighborhood}
+        partySize={partySizeFromMode(
+          (data.user.party_size_mode ?? "2") as PartySizeMode,
+        )}
+        accountBenefitLabel={
+          enriched &&
+          enriched.benefitType !== "nenhum" &&
+          benefitUi.title !== "Sem desconto por agora"
+            ? benefitUi.title
+            : null
+        }
+        prefersQuietBenefits={prefersQuietBenefits}
+      />
 
       <section className="space-y-3">
         <div>
