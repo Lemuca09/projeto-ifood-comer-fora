@@ -21,7 +21,14 @@ export function inferCuisine(restaurantName: string): string {
   if (/burger|smash|hamb/.test(n)) return "Hambúrguer";
   if (/pizza|trattoria|italia|nhoque|pasta/.test(n)) return "Italiana";
   if (/esfiha|árabe|arabe|kibe|shawarma/.test(n)) return "Árabe";
-  if (/verde|veg|buddha|plant/.test(n)) return "Vegetariana";
+  // Nomes do seed: "Buddha Bowl Maré", "Veg Aparecida", etc.
+  if (
+    /buddha|veggie|\bveg\b|vegetari|vegana|plant.?based|falafel|gr[aã]o.?de.?bico/.test(
+      n,
+    )
+  ) {
+    return "Vegetariana";
+  }
   return "Brasileira";
 }
 

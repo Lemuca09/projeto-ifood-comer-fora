@@ -34,7 +34,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 Comer Fora
               </p>
               <p className="mt-1 text-xs text-muted sm:text-sm">
-                Pra Hoje · delivery → salão
+                Delivery → Ocasião Gastronômica
               </p>
             </div>
             <nav className="hidden items-center gap-1 lg:flex" aria-label="Principal">

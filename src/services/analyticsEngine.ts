@@ -12,7 +12,9 @@ import { multipleRegression } from "@/domain/analytics/regression";
 import {
   buildRetentionCurves,
   buildSeasonalitySeries,
+  currentSeasonalityContext,
 } from "@/domain/analytics/seasonality";
+import type { SeasonalityContext } from "@/domain/analytics/calendarDemand";
 import { pickFavoriteDishes, type FavoriteDish } from "@/domain/analytics/dishes";
 import {
   pickEfficientRestaurantStrategy,
@@ -123,6 +125,8 @@ export type DashboardPayload = {
   };
   regression: ReturnType<typeof multipleRegression>;
   seasonality: ReturnType<typeof buildSeasonalitySeries>;
+  /** Contexto de calendário “agora” (feriado / salário) para decisões de benefício. */
+  seasonalityContext: SeasonalityContext;
   retention: ReturnType<typeof buildRetentionCurves>;
   /** Impacto calculado com vs sem cada feature V2. */
   featureImpact: FeatureImpactReport;
@@ -262,6 +266,7 @@ export function buildAnalyticsDashboard(
   catalogRestaurants: CatalogRestaurant[] = [],
 ): DashboardPayload {
   const rnd = mulberry32(seed);
+  const seasonalityContext = currentSeasonalityContext();
   const base = personas.map((u) => enrichFromPersona(u, rnd));
 
   const features = base.map((u) => [
@@ -327,6 +332,7 @@ export function buildAnalyticsDashboard(
         partySizeMode: u.partySizeMode,
         comerForaVisits90d: u.comerForaVisits90d,
         avgMarginPct: u.avgMarginPct,
+        seasonality: seasonalityContext,
       },
       rnd,
     );
@@ -424,6 +430,7 @@ export function buildAnalyticsDashboard(
       nearbyClusterMix: clusterMix,
       topDishName: sampleDish?.name,
       topDishPriceBrl: sampleDish?.typicalPriceBrl,
+      seasonality: seasonalityContext,
     });
     const after =
       before *
@@ -535,7 +542,28 @@ export function buildAnalyticsDashboard(
     strategyMix,
     regression,
     seasonality: buildSeasonalitySeries(seed),
+    seasonalityContext,
     retention: buildRetentionCurves(seed),
-    featureImpact: buildFeatureImpactReport(users, seed),
+    featureImpact: buildFeatureImpactReport(
+      users.map((u) => ({
+        id: u.id,
+        archetype: u.archetype,
+        recencyDays: u.recencyDays,
+        frequency: u.frequency,
+        monetary: u.monetary,
+        churnRisk: u.churnRisk,
+        priceSensitivity: u.priceSensitivity,
+        partySizeMode: u.partySizeMode,
+        comerForaVisits90d: u.comerForaVisits90d,
+        frictionReason: u.frictionReason,
+        avgMarginPct: u.avgMarginPct,
+        lastNpsScore: u.lastNpsScore,
+        benefitType: u.benefitType,
+        benefitValueBrl: u.benefitValueBrl,
+        cluster: u.cluster,
+      })),
+      seed,
+      seasonalityContext,
+    ),
   };
 }

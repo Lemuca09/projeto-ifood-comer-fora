@@ -7,16 +7,27 @@ export const GUARD_THRESHOLDS = {
   bloquearMin: 70,
 } as const;
 
-/** Abuso [PREMISSA] AGENTS §7.5 */
+/** Abuso + orçamento de tokens [PREMISSA] AGENTS §7.5 */
 export const ABUSE_LIMITS = {
-  /** RPM baixo de propósito — cota Gemini estoura fácil na demo. */
-  aiPerSessionPerMin: 3,
-  aiPerIpPerMin: 6,
-  aiPerSessionTotal: 12,
-  maxOutputTokens: 500,
-  timeoutMs: 8000,
+  /** RPM baixo — demo não precisa de rajada. */
+  aiPerSessionPerMin: 2,
+  aiPerIpPerMin: 4,
+  aiPerSessionTotal: 8,
+  /** Teto genérico; tarefas usam tetos menores abaixo. */
+  maxOutputTokens: 520,
+  /** Ranking: ≤3 itens JSON. */
+  maxOutputTokensRank: 220,
+  /** Brief/campanha/copy. */
+  maxOutputTokensAnalytics: 160,
+  /** Concierge “Pergunte onde jantar” (prosa curta + IDs). */
+  maxOutputTokensConcierge: 480,
+  /** Sentimento / classificação. */
+  maxOutputTokensTiny: 90,
+  /** Máx. candidatos enviados ao ranker. */
+  maxRankCandidates: 8,
+  timeoutMs: 10_000,
   maxRetries: 0,
-  globalDailyAiCalls: 80,
+  globalDailyAiCalls: 50,
   writePerSessionPerMin: 30,
   maxBodyBytes: 8_192,
 } as const;

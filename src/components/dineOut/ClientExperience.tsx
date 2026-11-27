@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useDemoSession } from "@/context/DemoSessionContext";
 import { useAnalyticsDashboard } from "@/context/AnalyticsDashboardContext";
+import { BenefitSearch } from "@/components/BenefitSearch";
 import { buildClientHistoryFromCatalog } from "@/domain/dineOut/clientView";
 import { benefitCopy } from "@/lib/benefitCopy";
 import { priceRangeLabel } from "@/lib/constants";
@@ -110,6 +111,8 @@ export function ClientExperience() {
           reserve a mesa sem passar pelo perfil.
         </p>
       </section>
+
+      <BenefitSearch />
 
       <section className="space-y-3">
         <div>
@@ -225,53 +228,94 @@ export function ClientExperience() {
             Anti-churn: benefícios exclusivos quando a recorrência cai
           </p>
         </div>
-        <ul className="space-y-3">
-          {history.map((h) => (
-            <li key={h.restaurantId}>
-              <Link
-                href={`/cliente/restaurante/${h.restaurantId}`}
-                className={`if-card block p-4 transition hover:border-ifood/40 ${
-                  h.losingInterest ? "border-amber-200/80" : ""
-                }`}
-              >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <h3 className="font-title text-base font-extrabold">
-                      {h.name}
-                    </h3>
-                    <p className="text-xs text-muted">
-                      {h.neighborhood} · última visita há {h.lastVisitDaysAgo}{" "}
-                      dias · {h.visits90d} visitas / 90d
-                    </p>
+        {history.length === 0 ? (
+          <p className="if-card p-4 text-sm text-muted">
+            Ainda sem histórico neste bairro.
+          </p>
+        ) : (
+          <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {history.map((h, idx) => (
+              <li key={h.restaurantId}>
+                <Link
+                  href={`/cliente/restaurante/${h.restaurantId}`}
+                  className={`if-card flex h-full flex-col transition hover:border-ifood/40 ${
+                    h.losingInterest ? "border-amber-200/80" : ""
+                  }`}
+                >
+                  <div
+                    className={`relative h-32 bg-gradient-to-br sm:h-36 ${COVER[idx % COVER.length]}`}
+                  >
+                    <span className="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-bold text-ifood shadow-sm">
+                      {h.isFavorite
+                        ? "Favorito"
+                        : h.losingInterest
+                          ? "Perdendo interesse"
+                          : "Histórico"}
+                    </span>
+                    <span className="absolute bottom-3 right-3 rounded-full bg-black/45 px-2 py-1 text-[11px] font-bold text-white">
+                      {priceRangeLabel(h.priceRange)}
+                    </span>
                   </div>
-                  <div className="flex flex-wrap gap-1">
-                    {h.isFavorite && (
-                      <span className="rounded-full bg-ifood-soft px-2.5 py-1 text-[10px] font-extrabold uppercase text-ifood">
-                        Favorito
-                      </span>
-                    )}
-                    {h.losingInterest && (
-                      <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-extrabold uppercase text-amber-800">
-                        Perdendo interesse
-                      </span>
-                    )}
+                  <div className="flex flex-1 flex-col space-y-2 p-4">
+                    <div className="flex-1">
+                      <h3 className="font-title text-lg font-extrabold">
+                        {h.name}
+                      </h3>
+                      {h.description && (
+                        <p className="mt-0.5 line-clamp-2 text-sm text-muted">
+                          {h.description}
+                        </p>
+                      )}
+                      <p className="mt-2 text-xs font-semibold text-muted">
+                        {h.neighborhood} · última visita há {h.lastVisitDaysAgo}{" "}
+                        dias · {h.visits90d} visitas / 90d
+                      </p>
+                      {typeof h.typicalWaitMin === "number" && (
+                        <p className="text-sm font-bold text-[var(--ifdl-color-success)]">
+                          Fila típica ~{h.typicalWaitMin} min · promo{" "}
+                          {h.promoDiscountPct ?? 0}%
+                        </p>
+                      )}
+                      <div
+                        className={
+                          prefersQuietBenefits
+                            ? "mt-3 rounded-if border border-neutral-200/80 bg-neutral-50 px-3 py-2"
+                            : h.winbackTitle
+                              ? "mt-3 rounded-if border border-dashed border-ifood/30 bg-ifood-soft/50 px-3 py-2"
+                              : "mt-3 rounded-if bg-ifood-soft px-3 py-2"
+                        }
+                      >
+                        <p
+                          className={
+                            prefersQuietBenefits
+                              ? "text-xs font-extrabold text-neutral-500"
+                              : "text-xs font-extrabold text-ifood"
+                          }
+                        >
+                          {h.winbackTitle
+                            ? `Reativação · ${h.winbackTitle}`
+                            : benefitUi.title}
+                        </p>
+                        <p
+                          className={
+                            prefersQuietBenefits
+                              ? "text-[11px] font-semibold text-neutral-400"
+                              : "text-[11px] font-semibold text-muted"
+                          }
+                        >
+                          {h.winbackDetail ?? benefitUi.detail}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="if-btn-primary w-full text-center">
+                      Ver Delivery e Comer Fora
+                    </span>
                   </div>
-                </div>
-                {h.winbackTitle && (
-                  <div className="mt-3 rounded-if border border-dashed border-ifood/30 bg-ifood-soft/50 px-3 py-2">
-                    <p className="text-[10px] font-bold uppercase text-ifood">
-                      Benefício de reativação
-                    </p>
-                    <p className="text-sm font-extrabold text-ink">
-                      {h.winbackTitle}
-                    </p>
-                    <p className="text-[11px] text-muted">{h.winbackDetail}</p>
-                  </div>
-                )}
-              </Link>
-            </li>
-          ))}
-        </ul>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </div>
   );

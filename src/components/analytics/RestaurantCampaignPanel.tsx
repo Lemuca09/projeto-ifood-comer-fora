@@ -45,8 +45,8 @@ export function RestaurantCampaignPanel() {
           Plano para restaurantes parceiros
         </h2>
         <p className="mt-1 text-xs text-muted">
-          Melhor incentivo por restaurante parceiro, cruzando horário fraco do
-          salão com o tipo de cliente da região
+          Melhor incentivo por restaurante: ociosidade, clusters e sazonalidade
+          (feriado lotado = mais leve; salário dias 5–15 = mais incentivo)
         </p>
       </div>
 
@@ -128,7 +128,7 @@ export function RestaurantCampaignPanel() {
         {plan && (
           <div className="rounded-if border border-ifood/20 bg-ifood-soft/40 p-4 text-sm">
             <p className="text-[10px] font-bold uppercase text-muted">
-              {plan.isFallback ? "Fallback" : "Gemini"} · plano pronto
+              {plan.isFallback ? "Fallback" : "Claude"} · plano pronto
             </p>
             <p className="mt-2">
               <span className="font-bold">Benefício:</span> {plan.beneficio}

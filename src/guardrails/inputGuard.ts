@@ -9,18 +9,26 @@ export type GuardResult = {
   textoSeguro: string;
 };
 
+/** Regras AGENTS.md §7.2 + padrões de jailbreak/injection (pt/en). Críticas = 70. */
 const RULES: Array<{ id: string; re: RegExp; score: number }> = [
   { id: "ignore_instructions", re: /ignore\s+(all\s+)?(previous|above|prior)\s+instructions/i, score: 70 },
   { id: "ignore_pt", re: /ignore\s+(todas?\s+)?(as\s+)?instru/i, score: 70 },
   { id: "substituir_instrucoes", re: /substitu(a|ir)\s+(todas?\s+)?(as\s+)?instru/i, score: 70 },
-  { id: "role_play", re: /(you\s+are\s+now|você\s+agora\s+é|developer\s+mode|modo\s+desenvolvedor|\bDAN\b)/i, score: 70 },
-  { id: "extract_prompt", re: /(reveal|show|print|exiba|mostre|diga).{0,40}(system\s+prompt|prompt\s+do\s+sistema|canary)/i, score: 70 },
-  { id: "fake_tags", re: /<\/?\s*(system|assistant|instruction)\s*>/i, score: 40 },
-  { id: "delimiter_fake", re: /(-{3,}\s*)?(SYSTEM|INSTRUÇÃO|INSTRUCAO)\s*(-{3,})?/i, score: 40 },
+  { id: "bypass", re: /\b(bypass|jailbreak|override\s+rules?|quebra\s+de\s+regras?)\b/i, score: 70 },
+  { id: "role_play", re: /(you\s+are\s+now|você\s+agora\s+é|act\s+as|atue\s+como|finja\s+que\s+(você|voce)\s+é|developer\s+mode|modo\s+desenvolvedor|\bDAN\b)/i, score: 70 },
+  { id: "extract_prompt", re: /(reveal|show|print|exiba|mostre|diga|repita).{0,40}(system\s+prompt|prompt\s+do\s+sistema|instru(c|ç)[oõ]es\s+internas|canary)/i, score: 70 },
+  { id: "system_prompt_mention", re: /\b(system\s+prompt|prompt\s+do\s+sistema|instru(c|ç)[oõ]es\s+do\s+sistema)\b/i, score: 70 },
+  { id: "fake_tags", re: /<\/?\s*(system|assistant|instruction|instructions|user_query)\s*>/i, score: 70 },
+  { id: "delimiter_fake", re: /(-{3,}\s*)?(SYSTEM|INSTRUÇÃO|INSTRUCAO|END\s+OF\s+PROMPT)\s*(-{3,})?/i, score: 70 },
+  { id: "sqli", re: /(\b(union\s+select|drop\s+table|insert\s+into|or\s+1\s*=\s*1)\b|--\s*$|;(\s)*(drop|delete|update))/i, score: 70 },
+  { id: "code_injection", re: /(<script|javascript:|onerror\s*=|\beval\s*\(|\bexec\s*\(|\$\{.*\})/i, score: 70 },
+  { id: "force_discount", re: /(invente|inventa|finja|force|me\s+d[eê]).{0,40}(cupom|desconto|promo(c|ç)[aã]o|gr[aá]tis).{0,20}(100|ilimitado|qualquer|inexistente)/i, score: 70 },
+  { id: "override_business", re: /(ignore|ignore\s+as|n[aã]o\s+respeite).{0,30}(regras?\s+de\s+neg[oó]cio|pol[ií]tica|pre[cç]o|disponibilidade)/i, score: 70 },
   { id: "base64_blob", re: /(?:[A-Za-z0-9+/]{40,}={0,2})/, score: 20 },
   { id: "leetspeak_jail", re: /1gn0r[e3].{0,20}1nstru/i, score: 40 },
   { id: "many_shot", re: /(?:user:|assistant:)(?:[\s\S]*?(?:user:|assistant:)){5,}/i, score: 40 },
   { id: "inverted_hint", re: /texto\s+invertido|reverse\s+the\s+prompt/i, score: 40 },
+  { id: "toxicity", re: /\b(mate|assassine|ódio\s+racial|hate\s+speech|nazista)\b/i, score: 70 },
 ];
 
 /** Pares confundíveis comuns (homóglifos) → ASCII. */

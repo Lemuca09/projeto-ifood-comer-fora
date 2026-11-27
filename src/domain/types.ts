@@ -12,6 +12,9 @@ export type RestaurantRow = {
   occasion_tags: string[];
   is_active: boolean;
   is_synthetic: boolean;
+  typical_wait_min?: number | null;
+  idle_capacity_pct?: number | null;
+  promo_discount_pct?: number | null;
 };
 
 export type SlotRow = {
@@ -37,11 +40,19 @@ export type DiscoveryResult = {
   discoveryId: string;
   recommendationId: string;
   isFallback: boolean;
+  /** Resposta conversacional do concierge (Claude ou template local). */
+  answer?: string;
+  answerIsFallback?: boolean;
+  nowLocal?: string;
   items: Array<{
     rank: number;
     reason_code: ReasonCode;
     reason_label: string;
     restaurant: RestaurantRow;
     next_slot: SlotRow | null;
+    /** Horários livres confirmados no banco (ISO), só ground truth. */
+    available_slots?: string[];
+    cuisine?: string;
+    promo_discount_pct?: number | null;
   }>;
 };

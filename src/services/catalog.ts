@@ -12,7 +12,9 @@ export async function findEligibleRestaurants(
 ): Promise<EligibleRestaurant[]> {
   const { data: restaurants, error } = await admin
     .from("restaurants")
-    .select("*")
+    .select(
+      "id, name, description, neighborhood, address, price_range, occasion_tags, is_active, is_synthetic, typical_wait_min, idle_capacity_pct, promo_discount_pct",
+    )
     .eq("is_active", true)
     .eq("neighborhood", params.neighborhood);
 

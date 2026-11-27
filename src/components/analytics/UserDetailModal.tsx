@@ -298,7 +298,7 @@ export function UserDetailModal({
           </p>
           <p className="mt-2 text-sm leading-relaxed">{shown.pushCopy}</p>
           <p className="mt-1 text-[10px] font-bold uppercase text-muted">
-            {shown.isFallback ? "Local (0 RPM)" : "Gemini"} ·{" "}
+            {shown.isFallback ? "Local (0 RPM)" : "Claude"} ·{" "}
             {user.benefitType === "nenhum"
               ? "sem desconto por agora"
               : user.benefitType === "prato_gratis"
@@ -327,7 +327,7 @@ export function UserDetailModal({
               disabled={pending}
               onClick={generateWithAi}
             >
-              {pending ? "Gerando…" : "Gerar com Gemini"}
+              {pending ? "Gerando…" : "Gerar com Claude"}
             </button>
           </div>
         </div>

@@ -73,7 +73,7 @@ export function benefitCopy(b: BenefitCopyInput): {
   };
 }
 
-/** Copy de notificação pronta (fallback local ou guia do Gemini). */
+/** Copy de notificação pronta (fallback local ou guia do Claude). */
 export function notificationCopy(input: {
   displayName: string;
   cuisine: string;

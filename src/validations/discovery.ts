@@ -11,8 +11,22 @@ export const discoveryInputSchema = z.object({
   requestedFor: z.string().datetime().optional(),
   /** Busca conversacional livre (ex.: giftback + ticket). */
   queryText: z.string().max(400).optional(),
-  /** Reserva / fluxos internos: ranking local, zero Gemini. */
+  /** Reserva / fluxos internos: ranking local, zero LLM. */
   skipAi: z.boolean().optional(),
+  /** Pedido conversacional: gera resposta em prosa ancorada no banco. */
+  conversational: z.boolean().optional(),
+  userProfile: z
+    .object({
+      displayName: z.string().max(80).optional(),
+      preferredCuisine: z.string().max(40),
+      preferredHourSlot: z.string().max(40),
+      priceSensitivity: z.number().min(0).max(1),
+      partySizeMode: z.enum(["1", "2", "4+"]),
+      favoriteRestaurantId: z.string().uuid().nullable().optional(),
+      comerForaVisits90d: z.number().int().min(0).max(500).optional(),
+      daysSinceLastDinein: z.number().int().min(0).max(3650).optional(),
+    })
+    .optional(),
   benefitContext: z
     .object({
       clusterId: z.string().max(40).optional(),

@@ -1,5 +1,7 @@
 import type { ClusterId } from "@/domain/analytics/pcaKmeans";
 import type { FavoriteDish } from "@/domain/analytics/dishes";
+import type { SeasonalityContext } from "@/domain/analytics/calendarDemand";
+import { currentSeasonalityContext } from "@/domain/analytics/calendarDemand";
 
 export type BenefitType = "cupom" | "giftback" | "prato_gratis" | "nenhum";
 
@@ -47,6 +49,8 @@ export type UserStrategyInput = {
   partySizeMode?: "1" | "2" | "4+";
   comerForaVisits90d?: number;
   avgMarginPct?: number;
+  /** Sazonalidade (feriado, salário, weekday) — define timing e intensidade. */
+  seasonality?: SeasonalityContext;
 };
 
 const MARGIN_RATE = 0.16;
@@ -166,10 +170,16 @@ function efficiencyScore(
   return score;
 }
 
+function withSeasonalityReason(reason: string, seasonality: SeasonalityContext): string {
+  return `${reason} · Sazonalidade: ${seasonality.summary} (intensidade ×${seasonality.benefitIntensityMult}).`;
+}
+
 export function pickEfficientUserStrategy(
   input: UserStrategyInput,
   rnd: () => number,
 ): ScoredStrategy {
+  const seasonality = input.seasonality ?? currentSeasonalityContext();
+  const intensity = seasonality.benefitIntensityMult;
   const idle = input.restaurantIdlePct ?? 0.35;
   const avgTicket = Math.max(input.avgTicketBrl, 25);
   const marginRate = Math.min(
@@ -185,12 +195,16 @@ export function pickEfficientUserStrategy(
   ) => scoreOption({ ...p, marginRate: p.marginRate ?? marginRate });
   const options: ScoredStrategy[] = [];
 
+  const organicLiftBoost = seasonality.preferLowDiscount ? 0.05 : 0;
+  const paidLiftBoost =
+    intensity >= 1.15 ? 0.04 : intensity <= 0.75 ? -0.03 : 0;
+
   options.push(
     so({
       id: "nenhum",
       benefitType: "nenhum",
       value: 0,
-      lift: 0.015 + rnd() * 0.015,
+      lift: 0.015 + rnd() * 0.015 + organicLiftBoost,
       spendBefore: input.spendBefore,
       cannibalization: 0,
       label: "Sem benefício (orgânico)",
@@ -203,17 +217,21 @@ export function pickEfficientUserStrategy(
       id: "push_organico",
       benefitType: "nenhum",
       value: 0,
-      lift: 0.03 + (input.sentiment === "positivo" ? 0.02 : 0) + rnd() * 0.015,
+      lift:
+        0.03 +
+        (input.sentiment === "positivo" ? 0.02 : 0) +
+        rnd() * 0.015 +
+        organicLiftBoost,
       spendBefore: input.spendBefore,
       cannibalization: 0,
-      label: "Push orgânico (sem desconto)",
+      label: "Notificação orgânica (sem desconto)",
       reason: "Lembrete sem custo — útil em VIP estável e baixo churn.",
     }),
   );
 
-  // —— Cupons com trava proporcional ao valor ——
+  // —— Cupons com trava proporcional ao valor (intensidade sazonal) ——
   const rawTicketCoupon =
-    14 + rnd() * 10 + (input.frictionReason === "preco" ? 5 : 0);
+    (14 + rnd() * 10 + (input.frictionReason === "preco" ? 5 : 0)) * intensity;
   const gatedTicket = gateCouponBySpend(rawTicketCoupon, avgTicket);
   options.push(
     so({
@@ -227,6 +245,7 @@ export function pickEfficientUserStrategy(
         (input.cluster === "loyal_price_sensitive" ? 0.06 : 0) +
         (input.frictionReason === "preco" ? 0.04 : 0) +
         (newToCf ? 0.05 : 0) +
+        paidLiftBoost +
         rnd() * 0.05,
       spendBefore: input.spendBefore,
       cannibalization:
@@ -239,7 +258,7 @@ export function pickEfficientUserStrategy(
   );
 
   const rawReativ =
-    22 + rnd() * 14 + (input.churnRisk > 55 ? 8 : 0); // pode chegar ~R$30+
+    (22 + rnd() * 14 + (input.churnRisk > 55 ? 8 : 0)) * intensity;
   const gatedReativ = gateCouponBySpend(rawReativ, avgTicket);
   options.push(
     so({
@@ -253,6 +272,7 @@ export function pickEfficientUserStrategy(
         (input.recencyDays > 20 ? 0.12 : 0) +
         (input.monetary > 350 ? 0.06 : 0) +
         (input.frictionReason !== "nenhum" ? 0.04 : 0) +
+        paidLiftBoost +
         rnd() * 0.04,
       spendBefore: input.spendBefore,
       cannibalization: input.cluster === "vip_organic" ? 0.5 : 0.15,
@@ -264,15 +284,18 @@ export function pickEfficientUserStrategy(
     }),
   );
 
-  if (idle > 0.35) {
-    const gatedLow = gateCouponBySpend(12 + rnd() * 10, avgTicket);
+  if (idle > 0.35 || intensity >= 1.15) {
+    const gatedLow = gateCouponBySpend(
+      (12 + rnd() * 10) * Math.max(intensity, 1),
+      avgTicket,
+    );
     options.push(
       so({
         id: "cupom_low_demand",
         benefitType: "cupom",
         value: gatedLow.couponBrl,
         minTicketBrl: gatedLow.minTicketBrl,
-        lift: 0.11 + idle * 0.18 + rnd() * 0.04,
+        lift: 0.11 + idle * 0.18 + paidLiftBoost + rnd() * 0.04,
         spendBefore: input.spendBefore,
         cannibalization: 0.08,
         label: `Cupom no horário fraco R$ ${gatedLow.couponBrl.toFixed(0)}`,
@@ -313,7 +336,13 @@ export function pickEfficientUserStrategy(
     );
   }
 
-  const gbRet = 12 + rnd() * 8;
+  // Giftback: na janela de salário acompanha a intensidade; em feriado lotado fica leve
+  const gbSeason = seasonality.isPaydayWindow
+    ? intensity
+    : seasonality.preferLowDiscount
+      ? 1.05
+      : intensity;
+  const gbRet = (12 + rnd() * 8) * Math.min(gbSeason, 1.25);
   options.push(
     so({
       id: "giftback_retencao",
@@ -325,6 +354,7 @@ export function pickEfficientUserStrategy(
         0.1 +
         (input.cluster === "vip_organic" ? 0.08 : 0.04) +
         (input.frequency > 3 ? 0.05 : 0) +
+        (seasonality.preferLowDiscount ? 0.03 : 0) +
         rnd() * 0.04,
       spendBefore: input.spendBefore,
       cannibalization: 0.04,
@@ -333,7 +363,9 @@ export function pickEfficientUserStrategy(
     }),
   );
 
-  const gbProg = 10 + rnd() * 10 + (input.partySizeMode === "4+" ? 6 : 0);
+  const gbProg =
+    (10 + rnd() * 10 + (input.partySizeMode === "4+" ? 6 : 0)) *
+    Math.min(gbSeason, 1.25);
   options.push(
     so({
       id: "giftback_progressivo",
@@ -375,34 +407,59 @@ export function pickEfficientUserStrategy(
   const paid = options.filter((o) => o.benefitType !== "nenhum");
   const unpaid = options.filter((o) => o.benefitType === "nenhum");
 
+  // Feriado lotado → orgânico/giftback; janela de salário → peso em benefício pago
+  const seasonalExplore = seasonality.preferLowDiscount
+    ? 8
+    : seasonality.isPaydayWindow
+      ? 0
+      : 0;
+  const paydayPaidBoost = seasonality.isPaydayWindow ? 10 : 0;
+
   // Ruído de exploração por seed → o mix muda ao clicar em Regerar
   const bestPaid = paid
     .map((p) => ({
       p,
-      s: efficiencyScore(p, preferred, (rnd() - 0.5) * 14, sens),
+      s:
+        efficiencyScore(p, preferred, (rnd() - 0.5) * 14, sens) +
+        (seasonality.preferLowDiscount && p.benefitType === "giftback"
+          ? seasonalExplore
+          : 0) -
+        (seasonality.preferLowDiscount && p.benefitType === "cupom" ? 6 : 0) +
+        (seasonality.isPaydayWindow && p.benefitType !== "nenhum"
+          ? paydayPaidBoost
+          : 0),
     }))
     .sort((a, b) => b.s - a.s)[0]?.p;
   const bestUnpaid = unpaid
     .map((p) => ({
       p,
-      s: efficiencyScore(p, preferred, (rnd() - 0.5) * 6, sens),
+      s:
+        efficiencyScore(p, preferred, (rnd() - 0.5) * 6, sens) +
+        (seasonality.preferLowDiscount ? seasonalExplore : 0) -
+        (seasonality.isPaydayWindow ? 8 : 0),
     }))
     .sort((a, b) => b.s - a.s)[0]?.p;
+
+  const finish = (picked: ScoredStrategy): ScoredStrategy => ({
+    ...picked,
+    reason: withSeasonalityReason(picked.reason, seasonality),
+  });
 
   const paidIsWeak =
     !bestPaid ||
     !bestUnpaid ||
     bestPaid.expectedIncrementalMargin <
       bestUnpaid.expectedIncrementalMargin * 0.85 ||
-    bestPaid.expectedRoi < 0.15;
+    bestPaid.expectedRoi < 0.15 ||
+    (seasonality.preferLowDiscount && bestPaid.benefitType === "cupom");
 
   const allowUnpaid =
-    paidIsWeak &&
-    !(input.churnRisk > 55) &&
-    !(input.cluster === "loyal_price_sensitive") &&
-    !(input.cluster === "churn_risk" && input.monetary > 250);
+    (paidIsWeak || seasonality.preferLowDiscount) &&
+    !(input.churnRisk > 55 && !seasonality.preferLowDiscount) &&
+    !(input.cluster === "loyal_price_sensitive" && intensity >= 1.2) &&
+    !(input.cluster === "churn_risk" && input.monetary > 250 && !seasonality.preferLowDiscount);
 
-  if (allowUnpaid && bestUnpaid.expectedIncrementalMargin >= 0) {
+  if (allowUnpaid && bestUnpaid && bestUnpaid.expectedIncrementalMargin >= 0) {
     if (
       input.cluster === "vip_organic" &&
       input.churnRisk < 40 &&
@@ -410,16 +467,25 @@ export function pickEfficientUserStrategy(
       bestPaid.id === "giftback_retencao" &&
       bestPaid.expectedRoi >= 0.25
     ) {
-      return bestPaid;
+      return finish(bestPaid);
     }
     if (
       input.cluster === "vip_organic" &&
       input.churnRisk < 35 &&
+      bestPaid &&
       bestPaid.expectedRoi < 0.4
     ) {
-      return bestUnpaid;
+      return finish(bestUnpaid);
     }
-    if (bestPaid.expectedIncrementalMargin < 0) return bestUnpaid;
+    // Pico de calendário: evita cupom agressivo; giftback > orgânico > cupom
+    if (seasonality.preferLowDiscount && bestPaid?.benefitType === "cupom") {
+      const gb = paid.find((p) => p.benefitType === "giftback");
+      if (gb && gb.expectedRoi >= 0.15) return finish(gb);
+      return finish(bestUnpaid);
+    }
+    if (bestPaid && bestPaid.expectedIncrementalMargin < 0) {
+      return finish(bestUnpaid);
+    }
   }
 
   if (
@@ -428,7 +494,7 @@ export function pickEfficientUserStrategy(
     (bestPaid.id === "cupom_reativacao" || bestPaid.id === "cupom_ticket_minimo")
   ) {
     const gb = paid.find((p) => p.id === "giftback_retencao");
-    if (gb && gb.expectedIncrementalMargin > 0) return gb;
+    if (gb && gb.expectedIncrementalMargin > 0) return finish(gb);
   }
 
   // Novos: se prato grátis empatar perto do cupom, prefere prato/giftback
@@ -437,10 +503,12 @@ export function pickEfficientUserStrategy(
       (p) =>
         p.id === "prato_gratis_favorito" || p.id === "giftback_progressivo",
     );
-    if (alt && alt.expectedRoi >= bestPaid.expectedRoi - 0.35) return alt;
+    if (alt && alt.expectedRoi >= bestPaid.expectedRoi - 0.35) {
+      return finish(alt);
+    }
   }
 
-  return bestPaid ?? bestUnpaid;
+  return finish(bestPaid ?? bestUnpaid!);
 }
 
 export type RestaurantStrategyInput = {
@@ -450,11 +518,14 @@ export type RestaurantStrategyInput = {
   nearbyClusterMix: Array<{ id: ClusterId; userSharePct: number }>;
   topDishName?: string;
   topDishPriceBrl?: number;
+  seasonality?: SeasonalityContext;
 };
 
 export function pickEfficientRestaurantStrategy(
   input: RestaurantStrategyInput,
 ): ScoredStrategy {
+  const seasonality = input.seasonality ?? currentSeasonalityContext();
+  const intensity = seasonality.benefitIntensityMult;
   const priceShare =
     (input.nearbyClusterMix.find((c) => c.id === "loyal_price_sensitive")
       ?.userSharePct ?? 0) +
@@ -467,12 +538,16 @@ export function pickEfficientRestaurantStrategy(
     input.nearbyClusterMix.find((c) => c.id === "new_occasional")
       ?.userSharePct ?? 0;
 
-  const gatedLow = gateCouponBySpend(18, 85);
-  const gatedReativ = gateCouponBySpend(30, 110);
+  const gatedLow = gateCouponBySpend(18 * intensity, 85);
+  const gatedReativ = gateCouponBySpend(30 * intensity, 110);
 
   const dishName = input.topDishName ?? "Prato assinatura da casa";
   const dishPrice = input.topDishPriceBrl ?? 45;
   const dishMin = Math.ceil(Math.max(dishPrice * 2.2, dishPrice / MAX_COUPON_SHARE_OF_TICKET));
+
+  const paidLift =
+    intensity >= 1.15 ? 0.04 : intensity <= 0.75 ? -0.025 : 0;
+  const organicLift = seasonality.preferLowDiscount ? 0.04 : 0;
 
   const candidates: ScoredStrategy[] = [
     scoreOption({
@@ -480,7 +555,7 @@ export function pickEfficientRestaurantStrategy(
       benefitType: "cupom",
       value: gatedLow.couponBrl,
       minTicketBrl: gatedLow.minTicketBrl,
-      lift: 0.12 + input.idlePct * 0.22,
+      lift: 0.12 + input.idlePct * 0.22 + paidLift,
       spendBefore: 10000,
       cannibalization: vipShare > 40 ? 0.28 : 0.1,
       label: `Cupom de R$ ${gatedLow.couponBrl.toFixed(0)} no horário fraco`,
@@ -492,7 +567,7 @@ export function pickEfficientRestaurantStrategy(
       value: dishPrice,
       minTicketBrl: dishMin,
       freeDishName: dishName,
-      lift: 0.11 + newShare / 400 + priceShare / 500,
+      lift: 0.11 + newShare / 400 + priceShare / 500 + paidLift * 0.5,
       spendBefore: 10000,
       cannibalization: 0.12,
       label: `Prato grátis: ${dishName}`,
@@ -501,10 +576,10 @@ export function pickEfficientRestaurantStrategy(
     scoreOption({
       id: "giftback_progressivo",
       benefitType: "giftback",
-      value: 14,
-      giftbackBalanceBrl: 14,
+      value: Math.round(14 * (seasonality.preferLowDiscount ? 1.1 : 1)),
+      giftbackBalanceBrl: Math.round(14 * (seasonality.preferLowDiscount ? 1.1 : 1)),
       minTicketBrl: 28,
-      lift: 0.09 + newShare / 350,
+      lift: 0.09 + newShare / 350 + (seasonality.preferLowDiscount ? 0.03 : 0),
       spendBefore: 10000,
       cannibalization: 0.06,
       label: "Giftback para 1ª/2ª visita",
@@ -514,7 +589,7 @@ export function pickEfficientRestaurantStrategy(
       id: "push_organico",
       benefitType: "nenhum",
       value: 0,
-      lift: 0.035 + vipShare / 600,
+      lift: 0.035 + vipShare / 600 + organicLift,
       spendBefore: 10000,
       cannibalization: 0,
       label: "Campanha orgânica (sem desconto)",
@@ -525,7 +600,7 @@ export function pickEfficientRestaurantStrategy(
       benefitType: "cupom",
       value: gatedReativ.couponBrl,
       minTicketBrl: gatedReativ.minTicketBrl,
-      lift: 0.14,
+      lift: 0.14 + paidLift,
       spendBefore: 10000,
       cannibalization: 0.18,
       label: `Cupom de reativação R$ ${gatedReativ.couponBrl.toFixed(0)}`,
@@ -533,25 +608,42 @@ export function pickEfficientRestaurantStrategy(
     }),
   ];
 
-  const preferred: StrategyOptionId | undefined =
-    input.idlePct > 0.4
-      ? "cupom_low_demand"
-      : newShare > 28
+  const preferred: StrategyOptionId | undefined = seasonality.preferLowDiscount
+    ? vipShare > 30
+      ? "push_organico"
+      : "giftback_progressivo"
+    : seasonality.isPaydayWindow
+      ? newShare > 25
         ? "prato_gratis_favorito"
-        : vipShare > 45
-          ? "push_organico"
-          : "cupom_reativacao";
+        : "cupom_reativacao"
+      : input.idlePct > 0.4 || intensity >= 1.15
+        ? "cupom_low_demand"
+        : newShare > 28
+          ? "prato_gratis_favorito"
+          : vipShare > 45
+            ? "push_organico"
+            : "cupom_reativacao";
 
   candidates.sort(
     (a, b) => efficiencyScore(b, preferred) - efficiencyScore(a, preferred),
   );
 
   const best = candidates[0];
+  const finish = (picked: ScoredStrategy): ScoredStrategy => ({
+    ...picked,
+    reason: withSeasonalityReason(picked.reason, seasonality),
+  });
   if (best.benefitType === "nenhum") {
     const paidBest = candidates.find((c) => c.benefitType !== "nenhum");
-    if (paidBest && paidBest.expectedRoi >= 0.2) return paidBest;
+    if (
+      paidBest &&
+      paidBest.expectedRoi >= 0.2 &&
+      !seasonality.preferLowDiscount
+    ) {
+      return finish(paidBest);
+    }
   }
-  return best;
+  return finish(best);
 }
 
 export const CLUSTER_PLAYBOOK: Record<

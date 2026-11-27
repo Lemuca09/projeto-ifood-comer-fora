@@ -93,10 +93,15 @@ export function FeatureImpactPanel() {
           Impacto calculado por feature
         </h2>
         <p className="mt-1 max-w-3xl text-xs leading-relaxed text-muted">
-          Comparação <strong className="text-ink">com vs sem</strong> cada mecânica na
-          mesma base de personas (Feature Store). Primária = KPI de produto; margem e
-          ROI = impacto de negócio. Detalhe em{" "}
-          <code className="text-[10px]">docs/METRICAS_IMPACTO_FEATURES.md</code>.
+          Comparação <strong className="text-ink">com vs sem</strong> cada
+          mecânica na base atual ({report.userCount} personas). Recalcula ao
+          regenerar: seed {report.seed} · intensidade sazonal ×
+          {report.benefitIntensityMult}. Primária = KPI de produto; margem e ROI
+          = negócio.{" "}
+          <code className="text-[10px]">docs/METRICAS_IMPACTO_FEATURES.md</code>
+        </p>
+        <p className="mt-1 text-[11px] font-semibold text-muted">
+          {report.seasonalitySummary}
         </p>
       </div>
 

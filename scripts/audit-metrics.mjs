@@ -54,6 +54,7 @@ for (const seed of seeds) {
     ret30: {
       giftback: d30.giftback,
       cupom: d30.cupom,
+      prato_gratis: d30.prato_gratis,
       controle: d30.controle,
       giftVsCtrlPp: Number(((d30.giftback - d30.controle) * 100).toFixed(1)),
     },
@@ -89,7 +90,7 @@ for (const seed of seeds) {
     `Mix: cupom ${row.mix.cupom} | giftback ${row.mix.giftback} | prato ${row.mix.prato_gratis} | nenhum ${row.mix.nenhum}`,
   );
   console.log(
-    `Retenção D30: giftback ${(row.ret30.giftback * 100).toFixed(1)}% | cupom ${(row.ret30.cupom * 100).toFixed(1)}% | controle ${(row.ret30.controle * 100).toFixed(1)}% | gift−ctrl +${row.ret30.giftVsCtrlPp} pp`,
+    `Retenção D30: giftback ${(row.ret30.giftback * 100).toFixed(1)}% | prato ${(row.ret30.prato_gratis * 100).toFixed(1)}% | cupom ${(row.ret30.cupom * 100).toFixed(1)}% | controle ${(row.ret30.controle * 100).toFixed(1)}% | gift−ctrl +${row.ret30.giftVsCtrlPp} pp`,
   );
   console.log(
     `Parceiro/mês: margem trad R$ ${row.partner.tradMargin} → CF R$ ${row.partner.cfMargin} (Δ R$ ${row.partner.lucroCfVsTrad}) → CF+benef R$ ${row.partner.benMargin} (Δ R$ ${row.partner.lucroBenVsTrad})`,

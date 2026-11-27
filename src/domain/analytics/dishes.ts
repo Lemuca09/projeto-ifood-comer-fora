@@ -35,10 +35,12 @@ export const DISHES_BY_CUISINE: Record<
     { name: "Beirute completo", typicalPriceBrl: 40 },
   ],
   Vegetariana: [
-    { name: "Bowl buddha", typicalPriceBrl: 42 },
+    { name: "Buddha bowl de grãos e tahine", typicalPriceBrl: 42 },
     { name: "Hambúrguer de grão-de-bico", typicalPriceBrl: 36 },
-    { name: "Risoto de legumes", typicalPriceBrl: 48 },
-    { name: "Salada completa proteica", typicalPriceBrl: 39 },
+    { name: "Risoto de legumes assados", typicalPriceBrl: 48 },
+    { name: "Lasanha de berinjela", typicalPriceBrl: 44 },
+    { name: "Wrap de falafel com hortaliças", typicalPriceBrl: 39 },
+    { name: "Curry de grão-de-bico e arroz", typicalPriceBrl: 41 },
   ],
 };
 

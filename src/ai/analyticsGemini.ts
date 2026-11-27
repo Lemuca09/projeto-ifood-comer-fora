@@ -1,14 +1,7 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { z } from "zod";
-import { getServerEnv } from "@/lib/env";
+import { callClaudeText, consumeClaudeFailReason } from "@/ai/claudeClient";
+import { CLAUDE_MODEL_FAST } from "@/ai/model";
 import { ABUSE_LIMITS } from "@/guardrails/config";
-import { GEMINI_MODEL } from "@/ai/model";
-import {
-  geminiCacheKey,
-  getGeminiCache,
-  setGeminiCache,
-  withGeminiThrottle,
-} from "@/ai/geminiGate";
 import { notificationCopy } from "@/lib/benefitCopy";
 import { executiveBriefLocal } from "@/lib/executiveBriefLocal";
 import type { DashboardPayload, EnrichedUser } from "@/services/analyticsEngine";
@@ -47,70 +40,57 @@ const userCopySchema = z
   })
   .strict();
 
-async function callGeminiJson(
+async function callClaudeJson(
   prompt: string,
   cacheParts: unknown[],
+  maxTokens: number,
 ): Promise<string | null> {
-  const env = getServerEnv();
-  if (!env.AI_ENABLED || !env.API_KEY_GEMINI) return null;
-
-  const key = geminiCacheKey([GEMINI_MODEL, ...cacheParts]);
-  const cached = getGeminiCache(key);
-  if (cached) return cached;
-
-  const text = await withGeminiThrottle(async () => {
-    try {
-      const genAI = new GoogleGenerativeAI(env.API_KEY_GEMINI!);
-      const model = genAI.getGenerativeModel({
-        model: GEMINI_MODEL,
-        generationConfig: {
-          responseMimeType: "application/json",
-          maxOutputTokens: ABUSE_LIMITS.maxOutputTokens,
-          temperature: 0.3,
-        },
-      });
-      const result = await Promise.race([
-        model.generateContent(prompt),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("timeout")), ABUSE_LIMITS.timeoutMs),
-        ),
-      ]);
-      return result.response.text()?.trim() || null;
-    } catch {
-      return null;
-    }
+  return callClaudeText({
+    user: prompt,
+    cacheParts,
+    temperature: 0.2,
+    maxTokens,
+    model: CLAUDE_MODEL_FAST,
   });
-
-  if (text) setGeminiCache(key, text);
-  return text;
 }
 
 export async function executiveBrief(
   dash: DashboardPayload,
-  opts?: { useAi?: boolean },
+  opts?: { useAi?: boolean; fallbackReason?: string },
 ) {
-  const fallback = executiveBriefLocal(dash);
-  if (!opts?.useAi) return fallback;
+  const fallback = () =>
+    executiveBriefLocal(dash, opts?.fallbackReason ?? "ai_disabled");
+  if (!opts?.useAi) return fallback();
 
   const mix = dash.strategyMix;
   const top = dash.regression.featureNames
-    .map((n, i) => ({ n, b: dash.regression.betas[i] }))
+    .map((n, i) => ({ n, b: Number(dash.regression.betas[i].toFixed(2)) }))
     .sort((a, b) => Math.abs(b.b) - Math.abs(a.b))
-    .slice(0, 3);
+    .slice(0, 2);
+  const clusters = dash.clusters.map((c) => ({
+    id: c.id,
+    u: Math.round(c.userSharePct),
+    p: Math.round(c.profitSharePct),
+  }));
 
-  const text = await callGeminiJson(
-    `Você é analista do iFood Comer Fora. Responda SÓ JSON com keys headline, lucroReal, canibalizacao, proximoPasso (strings curtas pt-BR).
-NÃO diga que a solução é só giftback. Enfatize escolha eficiente entre cupom, giftback, prato grátis e sem benefício.
-Dados: GMV delta ${dash.kpis.gmvDeltaPct}%, ROI ${dash.kpis.roi}, lift ${dash.kpis.liftVsControl}%, mixEstrategias ${JSON.stringify(mix)}, clusters ${JSON.stringify(dash.clusters.map((c) => ({ id: c.id, user: c.userSharePct, rev: c.revenueSharePct, profit: c.profitSharePct })))}, top betas ${JSON.stringify(top)}.`,
-    ["executive", dash.seed, dash.kpis.roi, mix],
+  const text = await callClaudeJson(
+    `Analista Comer Fora. JSON keys: headline,lucroReal,canibalizacao,proximoPasso (pt-BR, ≤18 palavras cada). Escolha eficiente cupom|giftback|prato|nenhum — não diga "só giftback".
+d:{gmvΔ:${dash.kpis.gmvDeltaPct},roi:${dash.kpis.roi},lift:${dash.kpis.liftVsControl},mix:${JSON.stringify(mix)},cl:${JSON.stringify(clusters)},β:${JSON.stringify(top)}}`,
+    ["executive", dash.seed, dash.kpis.roi, mix.cupom, mix.giftback],
+    ABUSE_LIMITS.maxOutputTokensAnalytics,
   );
-  if (!text) return fallback;
+  if (!text) {
+    return executiveBriefLocal(
+      dash,
+      consumeClaudeFailReason() ?? "claude_empty_or_auth",
+    );
+  }
   try {
     const parsed = executiveSchema.safeParse(JSON.parse(text));
-    if (!parsed.success) return fallback;
+    if (!parsed.success) return executiveBriefLocal(dash, "claude_parse");
     return { ...parsed.data, isFallback: false as const };
   } catch {
-    return fallback;
+    return executiveBriefLocal(dash, "claude_parse");
   }
 }
 
@@ -126,28 +106,57 @@ export async function restaurantCampaignPlan(
     locals.sort((a, b) => b.strategyRoi - a.strategyRoi)[0] ??
     dash.restaurants[0];
   const restaurantNames = locals.map((r) => r.name).join(", ") || neighborhood;
+  const season = dash.seasonalityContext;
   const fallback = {
     beneficio:
       local?.strategy ??
       "Cupom no horário fraco, giftback na 1ª visita ou campanha sem desconto",
-    horarioIdeal: "Terça e quarta 15h–17h / domingo 18h–19h",
+    horarioIdeal: season.isPaydayWindow
+      ? "Dias 5–15: empurrar Comer Fora com cupom/giftback/prato — usuário com poder de compra"
+      : season.preferLowDiscount
+        ? "Feriado/véspera lotada: notificação orgânica; cupom só em horário morto"
+        : "Terça e quarta 15h–17h / domingo 18h–19h — estimular fora da janela de salário com trava",
     publicoAlvo: `Parceiros em ${neighborhood}${
       locals.length ? ` (${restaurantNames})` : ""
-    } · cruzar clusters com ociosidade do salão`,
+    } · clusters × ociosidade × sazonalidade (${season.summary})`,
     projecaoReceitaPct: local?.deltaPct ?? dash.kpis.lowDemandLiftPct,
     roteiro:
       local?.strategyReason ??
-      "1) Medir ociosidade 2) Comparar cupom vs giftback vs prato 3) Escalar só o que paga",
+      `1) Calendário 2) Intensidade ×${season.benefitIntensityMult} 3) Comparar estratégias 4) Escalar o que paga`,
     isFallback: true as const,
   };
   if (!opts?.useAi) return fallback;
 
-  const text = await callGeminiJson(
-    `Consultor B2B iFood Comer Fora. Escolha a estratégia MAIS EFICIENTE (cupom, giftback, prato grátis ou sem desconto).
-JSON keys: beneficio, horarioIdeal, publicoAlvo, projecaoReceitaPct (number), roteiro.
-Bairro ${neighborhood}. Restaurantes parceiros: ${restaurantNames}.
-Referência principal ${JSON.stringify(local ?? null)}. Clusters ${JSON.stringify(dash.clusters)}. Mix ${JSON.stringify(dash.strategyMix)}.`,
-    ["campaign", dash.seed, neighborhood, local?.strategyRoi, local?.name],
+  const compactLocal = local
+    ? {
+        name: local.name,
+        strat: local.strategy,
+        roi: local.strategyRoi,
+        idle: local.idlePct,
+        ben: local.benefitType,
+      }
+    : null;
+  const seasonMini = {
+    pay: season.isPaydayWindow,
+    hol: season.holidayName,
+    inten: season.benefitIntensityMult,
+    lowDisc: season.preferLowDiscount,
+  };
+
+  const text = await callClaudeJson(
+    `B2B Comer Fora. JSON: beneficio,horarioIdeal,publicoAlvo,projecaoReceitaPct(number),roteiro (curto).
+Escolha cupom|giftback|prato|nenhum. Salário 5–15=mais incentivo; feriado lotado=leve.
+hood:${neighborhood} rests:${restaurantNames.slice(0, 80)}
+season:${JSON.stringify(seasonMini)} ref:${JSON.stringify(compactLocal)} mix:${JSON.stringify(dash.strategyMix)}`,
+    [
+      "campaign",
+      dash.seed,
+      neighborhood,
+      local?.strategyRoi,
+      local?.name,
+      season.benefitIntensityMult,
+    ],
+    ABUSE_LIMITS.maxOutputTokensAnalytics,
   );
   if (!text) return fallback;
   try {
@@ -172,10 +181,12 @@ export async function enrichSentiment(
   };
   if (!opts?.useAi) return fallback;
 
-  const text = await callGeminiJson(
-    `Classifique avaliação de restaurante. JSON: sentimento (positivo|neutro|negativo), motivo (preco|demora|qualidade|nenhum), gatilhoWinback (string).
-Texto NAO_CONFIAVEL: ${JSON.stringify(reviewText.slice(0, 400))}`,
-    ["sentiment", reviewText.slice(0, 120)],
+  const snippet = reviewText.slice(0, 160);
+  const text = await callClaudeJson(
+    `JSON: sentimento(positivo|neutro|negativo),motivo(preco|demora|qualidade|nenhum),gatilhoWinback(≤12 palavras).
+txt:${JSON.stringify(snippet)}`,
+    ["sentiment", snippet.slice(0, 80)],
+    ABUSE_LIMITS.maxOutputTokensTiny,
   );
   if (!text) return fallback;
   try {
@@ -207,24 +218,25 @@ export async function userIndividualCopy(
   };
   if (!opts?.useAi) return fallback;
 
-  const text = await callGeminiJson(
-    `Você escreve notificação push do iFood Comer Fora em português natural e convidativo.
-Responda SÓ JSON com keys: diagnostico (2 frases simples sobre a estratégia), pushCopy (1 notificação).
-Estilo: "Notificação: Rafa, cupom de desconto hoje de R$ 20,00 em comida japonesa. Agende entre 19h e 20h!"
-Regras: primeiro nome; "comida japonesa"; horário "entre 19h e 20h"; gasto mínimo se houver; se benefit=nenhum não invente desconto.
-Dados: ${JSON.stringify({
-      nome: user.display_name,
-      cluster: user.clusterLabel,
-      strategy: user.strategy,
-      reason: user.strategyReason,
-      benefit: user.benefitType,
-      value: user.benefitValueBrl,
-      minTicket: user.minTicketBrl,
-      freeDish: user.freeDishName,
-      cuisine: user.cuisine,
-      hour: user.preferredHour,
+  const first =
+    user.display_name.replace(/^Persona\s+/i, "").trim().split(/\s+/)[0] ||
+    "oi";
+  const text = await callClaudeJson(
+    `Notificação iFood Comer Fora. JSON: diagnostico(≤2 frases),pushCopy(1 notificação curta).
+Ex: "Notificação: Rafa, cupom de R$ 20 em comida japonesa. Agende entre 19h e 20h!"
+Se benefit=nenhum não invente desconto. Nome:${first}
+d:${JSON.stringify({
+      cl: user.clusterLabel,
+      st: user.strategy,
+      ben: user.benefitType,
+      v: user.benefitValueBrl,
+      min: user.minTicketBrl,
+      dish: user.freeDishName,
+      cui: user.cuisine,
+      h: user.preferredHour,
     })}`,
     ["user-copy", user.id, user.strategyId, user.benefitValueBrl, user.cuisine],
+    ABUSE_LIMITS.maxOutputTokensAnalytics,
   );
   if (!text) return fallback;
   try {

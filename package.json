@@ -15,7 +15,7 @@
     "db:probe-features": "node --env-file=.env scripts/probe-feature-store.mjs"
   },
   "dependencies": {
-    "@google/generative-ai": "0.21.0",
+    "@anthropic-ai/sdk": "^0.39.0",
     "@supabase/ssr": "0.5.2",
     "@supabase/supabase-js": "2.47.10",
     "next": "15.1.11",

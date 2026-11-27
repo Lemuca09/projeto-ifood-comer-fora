@@ -35,6 +35,7 @@ export async function POST(request: Request) {
     );
 
     let useAi = parsed.data.useAi === true;
+    let fallbackReason: string | undefined;
     if (useAi) {
       const ip = clientIpHmac(request);
       const budget = await checkAiBudget({
@@ -42,10 +43,13 @@ export async function POST(request: Request) {
         sessionId: `analytics:${ip}`,
         ipHmac: ip,
       });
-      if (!budget.allowed) useAi = false;
+      if (!budget.allowed) {
+        useAi = false;
+        fallbackReason = budget.reason ?? "budget";
+      }
     }
 
-    const brief = await executiveBrief(dash, { useAi });
+    const brief = await executiveBrief(dash, { useAi, fallbackReason });
     return NextResponse.json(brief);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Erro interno";

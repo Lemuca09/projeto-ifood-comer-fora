@@ -43,7 +43,7 @@ export function ReserveConfirmSheet({
   restaurantId,
   restaurantName,
   neighborhood,
-  preferredNeighborhood,
+  preferredNeighborhood: _preferredNeighborhood,
   benefit,
   prefersQuietBenefits = false,
   onClose,
@@ -56,7 +56,6 @@ export function ReserveConfirmSheet({
   const [checking, setChecking] = useState(true);
   const [available, setAvailable] = useState(false);
   const [slot, setSlot] = useState<SlotInfo | null>(null);
-  const [discoveryId, setDiscoveryId] = useState<string | undefined>();
   const [checkError, setCheckError] = useState<string | null>(null);
   const [confirmError, setConfirmError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -88,47 +87,17 @@ export function ReserveConfirmSheet({
       setAvailable(false);
       setSlot(null);
       try {
-        const res = await fetch("/api/discovery", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            occasion: "rapido",
-            neighborhood: preferredNeighborhood,
-            partySize: size,
-            skipAi: true,
-            benefitContext:
-              applyBenefit && benefit
-                ? {
-                    clusterId: benefit.cluster,
-                    clusterLabel: benefit.clusterLabel,
-                    benefitType: benefit.benefitType,
-                    benefitValueBrl: benefit.benefitValueBrl,
-                    giftbackBalanceBrl:
-                      benefit.giftbackBalanceBrl || benefit.benefitValueBrl,
-                    avgTicketBrl: benefit.avgTicketBrl,
-                    minTicketBrl: benefit.minTicketBrl,
-                    freeDishName: benefit.freeDishName ?? undefined,
-                  }
-                : undefined,
-          }),
-        });
+        // Slots só deste restaurante — evita pegar horário de outro lugar no ranking.
+        const res = await fetch(
+          `/api/restaurants/${restaurantId}/slots?partySize=${size}`,
+        );
         const json = await res.json();
         if (!res.ok) {
           setCheckError(json.error ?? "Não foi possível checar disponibilidade");
           return;
         }
-        setDiscoveryId(json.discoveryId);
-        const match = json.items?.find(
-          (i: { restaurant: { id: string }; next_slot?: SlotInfo | null }) =>
-            i.restaurant.id === restaurantId && i.next_slot,
-        );
-        const foundSlot: SlotInfo | null =
-          match?.next_slot ??
-          json.items?.find(
-            (i: { next_slot?: SlotInfo | null }) => i.next_slot,
-          )?.next_slot ??
-          null;
 
+        const foundSlot = (json.nextSlot as SlotInfo | null) ?? null;
         if (!foundSlot) {
           setAvailable(false);
           setCheckError(
@@ -156,7 +125,7 @@ export function ReserveConfirmSheet({
         setChecking(false);
       }
     },
-    [applyBenefit, benefit, preferredNeighborhood, restaurantId],
+    [restaurantId],
   );
 
   useEffect(() => {
@@ -175,7 +144,6 @@ export function ReserveConfirmSheet({
             restaurantId,
             slotId: slot.id,
             partySize,
-            discoveryId,
             savePreference: true,
           }),
         });

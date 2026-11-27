@@ -6,8 +6,11 @@ import { secureLog } from "@/guardrails/secureLog";
 import { findEligibleRestaurants } from "@/services/catalog";
 import { trackEvent } from "@/services/analytics";
 import { PROMPT_VERSION, rankWithAiOrFallback } from "@/ai/recommendation";
+import { generateDineConciergeAnswer } from "@/ai/dineConcierge";
+import { runConciergePreLlm } from "@/guardrails/conciergePreLlm";
+import { inferCuisine } from "@/domain/dineOut/menu";
 import type { DiscoveryInput } from "@/validations/discovery";
-import type { DiscoveryResult } from "@/domain/types";
+import type { DiscoveryResult, ReasonCode } from "@/domain/types";
 
 export async function runDiscovery(
   admin: SupabaseClient,
@@ -68,18 +71,48 @@ export async function runDiscovery(
     },
   });
 
-  const eligible = await findEligibleRestaurants(admin, {
-    neighborhood: input.neighborhood,
-    partySize: input.partySize,
-    requestedFor: input.requestedFor,
-    preferredPriceRange: input.preferredPriceRange,
-  });
-
+  // Texto livre do concierge: limpa PII; NER ajusta elegibilidade antes do catálogo.
   const querySafe = input.queryText
     ? stripLikelyPii(sanitizeUserText(input.queryText, 400))
     : undefined;
 
+  let effectiveNeighborhood = input.neighborhood;
+  let effectivePartySize = input.partySize;
   let preferredPriceRange = input.preferredPriceRange;
+
+  if (querySafe) {
+    const pre = runConciergePreLlm(querySafe);
+    await secureLog(admin, {
+      category: "input_guard",
+      decisao: pre.guard.decisao,
+      ruleIds: [...pre.ruleIds, "query_text"],
+      score: pre.guard.score,
+      versao: "inputGuard.v1+conciergePreLlm",
+      sessionId: userId,
+    });
+    if (pre.entities.neighborhood) {
+      effectiveNeighborhood = pre.entities.neighborhood;
+    }
+    if (pre.entities.partySize) {
+      effectivePartySize = pre.entities.partySize;
+    }
+    if (!preferredPriceRange && pre.entities.priceHint) {
+      preferredPriceRange =
+        pre.entities.priceHint === "baixo"
+          ? 1
+          : pre.entities.priceHint === "alto"
+            ? 4
+            : 2;
+    }
+  }
+
+  const eligible = await findEligibleRestaurants(admin, {
+    neighborhood: effectiveNeighborhood,
+    partySize: effectivePartySize,
+    requestedFor: input.requestedFor,
+    preferredPriceRange,
+  });
+
   const benefitValue =
     input.benefitContext?.benefitType === "nenhum"
       ? 0
@@ -93,19 +126,48 @@ export async function runDiscovery(
     preferredPriceRange = target <= 40 ? 1 : target <= 80 ? 2 : target <= 150 ? 3 : 4;
   }
 
-  const ranked = await rankWithAiOrFallback({
-    candidates: eligible,
-    occasion: input.occasion,
-    neighborhood: input.neighborhood,
-    partySize: input.partySize,
+  const conversational = input.conversational === true;
+  const effectiveInput: DiscoveryInput = {
+    ...input,
+    neighborhood: effectiveNeighborhood,
+    partySize: effectivePartySize,
     preferredPriceRange,
-    occasionTextSafe: guard.textoSeguro,
-    queryTextSafe: querySafe,
-    benefitContext: input.benefitContext,
-    forceFallback,
-  });
+    queryText: querySafe,
+  };
 
-  if (ranked.outputGuardReason) {
+  const ranked = conversational
+    ? null
+    : await rankWithAiOrFallback({
+        candidates: eligible,
+        occasion: effectiveInput.occasion,
+        neighborhood: effectiveNeighborhood,
+        partySize: effectivePartySize,
+        preferredPriceRange,
+        occasionTextSafe: guard.textoSeguro,
+        queryTextSafe: querySafe,
+        benefitContext: input.benefitContext,
+        forceFallback,
+      });
+
+  const concierge = conversational
+    ? await generateDineConciergeAnswer({
+        candidates: eligible,
+        input: effectiveInput,
+        forceFallback,
+      })
+    : null;
+
+  if (concierge?.blockedByGuard) {
+    await secureLog(admin, {
+      category: "input_guard",
+      decisao: "bloquear",
+      ruleIds: concierge.guardRuleIds ?? ["concierge_pre_llm"],
+      versao: "conciergePreLlm.v1",
+      sessionId: userId,
+    });
+  }
+
+  if (ranked?.outputGuardReason) {
     await secureLog(admin, {
       category: "output_guard",
       decisao: "fallback",
@@ -116,30 +178,77 @@ export async function runDiscovery(
     });
   }
 
+  const isFallback = conversational
+    ? (concierge?.isFallback ?? true)
+    : (ranked?.isFallback ?? true);
+
   await secureLog(admin, {
     category: "ai",
-    decisao: ranked.isFallback ? "fallback" : "model",
-    versao: ranked.isFallback ? undefined : PROMPT_VERSION,
-    latenciaMs: ranked.latencyMs,
+    decisao: isFallback ? "fallback" : "model",
+    versao: conversational
+      ? isFallback
+        ? undefined
+        : "dine-concierge.v2"
+      : isFallback
+        ? undefined
+        : PROMPT_VERSION,
+    latenciaMs: ranked?.latencyMs,
     sessionId: userId,
   });
+
+  const byId = new Map(eligible.map((e) => [e.id, e]));
+  const groundById = new Map(
+    (concierge?.ground ?? []).map((g) => [g.id, g]),
+  );
+
+  let rankedItems = ranked?.items ?? [];
+  if (conversational && concierge) {
+    rankedItems = concierge.orderedIds
+      .map((id, idx) => {
+        if (!byId.has(id)) return null;
+        const g = groundById.get(id);
+        const reason_code: ReasonCode = g?.matchCulinaria
+          ? "GOOD_MATCH"
+          : g && g.promoPct > 0
+            ? "PRICE_MATCH"
+            : "AVAILABILITY";
+        return {
+          restaurant_id: id,
+          reason_code,
+          rank: idx + 1,
+        };
+      })
+      .filter(Boolean) as Array<{
+      restaurant_id: string;
+      reason_code: ReasonCode;
+      rank: number;
+    }>;
+  }
 
   const { data: rec, error: rErr } = await admin
     .from("recommendations")
     .insert({
       discovery_id: discovery.id,
-      model: ranked.model,
-      prompt_version: ranked.isFallback ? null : PROMPT_VERSION,
-      is_fallback: ranked.isFallback,
+      model: conversational
+        ? concierge && !concierge.isFallback
+          ? "claude-concierge"
+          : null
+        : (ranked?.model ?? null),
+      prompt_version: isFallback
+        ? null
+        : conversational
+          ? "dine-concierge.v1"
+          : PROMPT_VERSION,
+      is_fallback: isFallback,
     })
     .select("id")
     .single();
 
   if (rErr || !rec) throw rErr ?? new Error("recommendation insert failed");
 
-  if (ranked.items.length) {
+  if (rankedItems.length) {
     const { error: iErr } = await admin.from("recommendation_items").insert(
-      ranked.items.map((item) => ({
+      rankedItems.map((item) => ({
         recommendation_id: rec.id,
         restaurant_id: item.restaurant_id,
         rank: item.rank,
@@ -155,20 +264,25 @@ export async function runDiscovery(
     entityId: rec.id,
     metadata: {
       discovery_id: discovery.id,
-      is_fallback: ranked.isFallback,
+      is_fallback: isFallback,
       neighborhood: input.neighborhood,
+      conversational,
     },
   });
 
-  const byId = new Map(eligible.map((e) => [e.id, e]));
-  const items = ranked.items
+  const items = rankedItems
     .map((item) => {
       const restaurant = byId.get(item.restaurant_id);
       if (!restaurant) return null;
+      const g = groundById.get(item.restaurant_id);
+      const slotsIso =
+        g?.slotsIso ?? restaurant.slots.slice(0, 4).map((s) => s.starts_at);
       return {
         rank: item.rank,
         reason_code: item.reason_code,
-        reason_label: REASON_LABELS[item.reason_code],
+        reason_label:
+          REASON_LABELS[item.reason_code] ??
+          (item.rank === 1 ? "Combina com você agora" : "Boa alternativa"),
         restaurant: {
           id: restaurant.id,
           name: restaurant.name,
@@ -179,8 +293,14 @@ export async function runDiscovery(
           occasion_tags: restaurant.occasion_tags,
           is_active: restaurant.is_active,
           is_synthetic: restaurant.is_synthetic,
+          typical_wait_min: restaurant.typical_wait_min ?? null,
+          idle_capacity_pct: restaurant.idle_capacity_pct ?? null,
+          promo_discount_pct: restaurant.promo_discount_pct ?? null,
         },
         next_slot: restaurant.slots[0] ?? null,
+        available_slots: slotsIso,
+        cuisine: g?.culinaria ?? inferCuisine(restaurant.name),
+        promo_discount_pct: restaurant.promo_discount_pct ?? null,
       };
     })
     .filter(Boolean) as DiscoveryResult["items"];
@@ -188,7 +308,10 @@ export async function runDiscovery(
   return {
     discoveryId: discovery.id,
     recommendationId: rec.id,
-    isFallback: ranked.isFallback,
+    isFallback,
+    answer: concierge?.answer,
+    answerIsFallback: concierge?.isFallback,
+    nowLocal: concierge?.nowLocal,
     items,
   };
 }

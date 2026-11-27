@@ -1,7 +1,10 @@
 import type { DashboardPayload } from "@/services/analyticsEngine";
 
-/** Briefing executivo sem chamar Gemini (zero RPM). */
-export function executiveBriefLocal(dash: DashboardPayload) {
+/** Briefing executivo sem chamar LLM (zero RPM). */
+export function executiveBriefLocal(
+  dash: DashboardPayload,
+  reason?: string,
+) {
   const mix = dash.strategyMix;
   const top = dash.regression.featureNames
     .map((n, i) => ({ n, b: dash.regression.betas[i] }))
@@ -17,5 +20,6 @@ export function executiveBriefLocal(dash: DashboardPayload) {
       ? `Priorize ações ligadas a “${top.n}” e escale só estratégias com retorno positivo por pessoa e por restaurante.`
       : "Escale só estratégias com retorno positivo por pessoa e por restaurante.",
     isFallback: true as const,
+    ...(reason ? { fallbackReason: reason } : {}),
   };
 }

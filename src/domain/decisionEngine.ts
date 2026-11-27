@@ -201,13 +201,13 @@ export function evaluateDecision(
   let recommend = !blocked && approvedCount >= rejectedCount && (money >= 12 || time > 5);
   if (user.archetype === "dinein_frequent") recommend = !blocked && friction < 0.7;
   if (silent && recommend) {
-    // ainda pode recomendar, mas modo silencioso (sem push invasivo)
+    // ainda pode recomendar, mas modo silencioso (sem notificação invasiva)
   }
   if (friction >= 0.7) recommend = false;
 
   const summary = recommend
     ? silent
-      ? "Recomendação suave de Comer Fora (modo silencioso — sem push invasivo)."
+      ? "Recomendação suave de Comer Fora (modo silencioso — sem notificação invasiva)."
       : "Recomendação ativa de converter delivery → salão."
     : "Não recomendar saída agora — atrito ou risco de rejeição alto.";
 

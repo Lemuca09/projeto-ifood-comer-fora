@@ -29,7 +29,13 @@ const templates = [
   ["Sashimi Norte", "Japonesa contemporânea.", 4, ["jantar_a_dois", "especial"]],
   ["Cantina da Vovó", "Pratos caseiros em porções generosas.", 1, ["familia", "rapido"]],
   ["Pizza do Trapiche", "Forno a lenha e bordas recheadas.", 2, ["grupo", "familia"]],
-  ["Verde Maré", "Opções vegetarianas e bowls.", 2, ["rapido", "jantar_a_dois"]],
+  [
+    "Buddha Bowl Maré",
+    "Cardápio 100% vegetariano: bowls, falafel e pratos sem carne.",
+    2,
+    ["rapido", "jantar_a_dois"],
+  ],
+  ["Esfiha do Cais", "Comida árabe e esfihas no salão.", 2, ["grupo", "rapido"]],
 ];
 
 const restaurants = [];

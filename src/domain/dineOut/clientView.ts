@@ -17,6 +17,10 @@ export type ClientHistoryCard = {
   restaurantId: string;
   name: string;
   neighborhood: string;
+  description: string | null;
+  priceRange: number;
+  typicalWaitMin: number | null;
+  promoDiscountPct: number | null;
   lastVisitDaysAgo: number;
   visits90d: number;
   losingInterest: boolean;
@@ -30,6 +34,9 @@ type CatalogLike = {
   name: string;
   neighborhood: string;
   description?: string | null;
+  price_range?: number;
+  typical_wait_min?: number | null;
+  promo_discount_pct?: number | null;
 };
 
 function frictionWinbackBenefit(
@@ -169,6 +176,12 @@ export function buildClientHistoryFromCatalog(
       restaurantId: r.id,
       name: isFavorite ? `${r.name} ★` : r.name,
       neighborhood: r.neighborhood,
+      description: r.description ?? null,
+      priceRange: r.price_range ?? 2,
+      typicalWaitMin:
+        typeof r.typical_wait_min === "number" ? r.typical_wait_min : null,
+      promoDiscountPct:
+        typeof r.promo_discount_pct === "number" ? r.promo_discount_pct : null,
       lastVisitDaysAgo: days,
       visits90d: visits,
       losingInterest: showWinback,
@@ -177,7 +190,7 @@ export function buildClientHistoryFromCatalog(
       winbackDetail: showWinback
         ? `Reativação${frictionLabel ? ` · atrito: ${frictionLabel}` : ""}${
             isFavorite ? " · favorito" : ""
-          } · ${r.name} · ${r.neighborhood} · ${copy.detail}`
+          } · ${copy.detail}`
         : null,
     };
   });

@@ -72,7 +72,7 @@ export function ProfileDrawer() {
           </label>
 
           <Field
-            label="Pushes ignorados (streak)"
+            label="Notificações ignoradas (streak)"
             value={streak}
             min={0}
             max={6}
