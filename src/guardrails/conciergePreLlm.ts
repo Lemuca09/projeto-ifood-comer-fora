@@ -39,7 +39,7 @@ const OUT_OF_SCOPE =
 export type ConciergeEntities = {
   cuisine?: string;
   hourHint?: string;
-  neighborhood?: string;
+  neighborhood?: (typeof NEIGHBORHOODS)[number];
   partySize?: number;
   priceHint?: "baixo" | "medio" | "alto";
   intentInScope: boolean;
