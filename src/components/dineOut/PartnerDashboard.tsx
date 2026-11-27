@@ -128,7 +128,7 @@ export function PartnerDashboard() {
     <div className="space-y-6">
       <section className="overflow-hidden rounded-if-lg border border-ifood/15 bg-gradient-to-br from-white via-ifood-soft/40 to-white px-5 py-7 shadow-if">
         <p className="text-xs font-bold uppercase tracking-wider text-ifood">
-          Visão do restaurante
+          Métricas de Incentivo ao Parceiro
         </p>
         <h1 className="font-title mt-2 text-3xl font-extrabold text-ink">
           {board.restaurantName}
@@ -224,9 +224,54 @@ export function PartnerDashboard() {
       </section>
 
       <section className="if-card space-y-3 p-4 sm:p-5">
-        <h2 className="font-title text-lg font-extrabold">
-          GMV semanal por cenário
-        </h2>
+        <div className="flex items-center gap-2">
+          <h2 className="font-title text-lg font-extrabold">
+            GMV semanal por cenário
+          </h2>
+          <div className="group relative inline-flex">
+            <button
+              type="button"
+              className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[var(--ifdl-color-border)] bg-white text-[11px] font-bold text-muted transition hover:border-ifood hover:text-ifood focus:outline-none focus-visible:ring-2 focus-visible:ring-ifood"
+              aria-label="Como o GMV semanal é calculado"
+              aria-describedby="gmv-partner-hint"
+            >
+              i
+            </button>
+            <div
+              id="gmv-partner-hint"
+              role="tooltip"
+              className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-[min(92vw,22rem)] -translate-x-1/2 rounded-if border border-[var(--ifdl-color-border)] bg-white p-3 text-left text-[11px] leading-relaxed text-ink opacity-0 shadow-if transition duration-150 group-hover:opacity-100 group-focus-within:opacity-100 sm:left-0 sm:translate-x-0"
+            >
+              <p className="font-extrabold text-ifood">Como calculamos este GMV</p>
+              <p className="mt-1.5 text-muted">
+                Números sintéticos para a demo do parceiro.{" "}
+                <span className="font-semibold text-ink">Capas</span> = pessoas
+                atendidas no salão no mês (cada cliente sentado conta como 1
+                capa). Em cada cenário o GMV mensal é{" "}
+                <span className="font-semibold text-ink">
+                  capas × ticket médio × (ocupação ÷ 100)
+                </span>
+                . A série semanal divide esse mensal por 8 e aplica uma variação
+                leve por semana (S1–S8).
+              </p>
+              <ul className="mt-2 space-y-1 text-muted">
+                <li>
+                  <span className="font-semibold text-ink">Tradicional:</span>{" "}
+                  ocupação e ticket da operação sem Comer Fora.
+                </li>
+                <li>
+                  <span className="font-semibold text-ink">Comer Fora:</span>{" "}
+                  ocupação e ticket sobem com reserva + pré-pedido.
+                </li>
+                <li>
+                  <span className="font-semibold text-ink">+ benefícios:</span>{" "}
+                  mais lift de ocupação/ticket, com custo de benefício e
+                  canibalização na margem.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={board.series}>

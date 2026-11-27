@@ -17,6 +17,7 @@ export type CartLine = {
 export type VisitPhase =
   | "preorder"
   | "confirmed"
+  | "totem_scanned"
   | "kitchen_started"
   | "checked_in"
   | "dining"

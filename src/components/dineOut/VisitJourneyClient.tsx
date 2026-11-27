@@ -13,6 +13,7 @@ import { isBenefitUnlocked } from "@/domain/dineOut/progressiveBenefit";
 const PHASE_ORDER: VisitPhase[] = [
   "preorder",
   "confirmed",
+  "totem_scanned",
   "kitchen_started",
   "checked_in",
   "dining",
@@ -67,7 +68,18 @@ export function VisitJourneyClient({
     setVisit(v);
 
     const hasPreorder = v.lines.some((l) => l.source === "preorder");
-    if (v.phase === "confirmed" && hasPreorder && !v.kitchenNotifiedAt) {
+    // Demo: após reserva+pré-pedido → escanear totem → cozinha.
+    if (v.phase === "confirmed" && hasPreorder) {
+      const t = window.setTimeout(() => {
+        const next = setVisitPhase(reservationId, "totem_scanned");
+        if (next) setVisit(next);
+        setToast(
+          "Totem do restaurante escaneado. Seu pré-pedido foi enviado à cozinha.",
+        );
+      }, 1400);
+      return () => window.clearTimeout(t);
+    }
+    if (v.phase === "totem_scanned" && !v.kitchenNotifiedAt) {
       const t = window.setTimeout(() => {
         const next = setVisitPhase(reservationId, "kitchen_started", {
           kitchenNotifiedAt: new Date().toISOString(),
@@ -76,7 +88,7 @@ export function VisitJourneyClient({
         setToast(
           "A cozinha já iniciou o preparo do seu pedido antecipado. Faça check-in ao chegar.",
         );
-      }, 2200);
+      }, 1800);
       return () => window.clearTimeout(t);
     }
   }, [
@@ -198,6 +210,7 @@ export function VisitJourneyClient({
           {(
             [
               { id: "confirmed" as const, label: "Reserva + pré-pedido" },
+              { id: "totem_scanned" as const, label: "Escanear totem" },
               { id: "kitchen_started" as const, label: "Cozinha iniciou o preparo" },
               { id: "checked_in" as const, label: "Check-in do grupo" },
               { id: "dining" as const, label: "Comanda digital aberta" },

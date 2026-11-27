@@ -39,7 +39,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
             <nav className="hidden items-center gap-1 lg:flex" aria-label="Principal">
               <Link href="/" className={navClass(home)}>
-                Início
+                O Projeto
               </Link>
               <Link href="/cliente" className={navClass(cliente)}>
                 Cliente
@@ -104,7 +104,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <span className="text-lg" aria-hidden>
             ⌂
           </span>
-          Início
+          O Projeto
         </Link>
         <Link
           href="/cliente"

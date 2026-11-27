@@ -119,12 +119,72 @@ export function ClientExperience() {
 
       <section className="space-y-3">
         <div>
-          <h2 className="font-title text-xl font-extrabold">
-            Recomendações personalizadas
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="font-title text-xl font-extrabold">
+              Recomendações personalizadas
+            </h2>
+            <div className="group relative inline-flex">
+              <button
+                type="button"
+                className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[var(--ifdl-color-border)] bg-white text-[11px] font-bold text-muted transition hover:border-ifood hover:text-ifood focus:outline-none focus-visible:ring-2 focus-visible:ring-ifood"
+                aria-label="Como as recomendações são feitas"
+                aria-describedby="reco-client-hint"
+              >
+                i
+              </button>
+              <div
+                id="reco-client-hint"
+                role="tooltip"
+                className="pointer-events-none absolute left-0 top-full z-20 mt-2 w-[min(92vw,24rem)] rounded-if border border-[var(--ifdl-color-border)] bg-white p-3 text-left text-[11px] leading-relaxed text-ink opacity-0 shadow-if transition duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
+              >
+                <p className="font-extrabold text-ifood">
+                  Como montei esta vitrine
+                </p>
+                <p className="mt-1.5 text-muted">
+                  Só entram restaurantes{" "}
+                  <span className="font-semibold text-ink">ativos no banco</span>{" "}
+                  do bairro da persona (
+                  {data.user.preferred_neighborhood}). No bootstrap, o motor de
+                  decisão ranqueia e guarda o top 3; se a sessão ainda não tiver
+                  ranking, usamos o catálogo do bairro na ordem do banco.
+                </p>
+                <p className="mt-2 font-extrabold text-ink">Score (ranking)</p>
+                <p className="mt-1 text-muted">
+                  Parte de 40 e soma pontos:{" "}
+                  <span className="font-semibold text-ink">+25</span> mesmo
+                  bairro, <span className="font-semibold text-ink">+20</span>{" "}
+                  promo ≥10%,{" "}
+                  <span className="font-semibold text-ink">+15</span> fila típica
+                  &lt;15 min, bônus por arquétipo (ex.: speed_seeker com fila
+                  curta, delivery_focused com promo alta), ajuste por faixa de
+                  preço. Modo silencioso ou “não recomendar sair” reduz o score.
+                  O badge (#1 · motivo) usa o reason code dominante (vaga, preço,
+                  perto…).
+                </p>
+                <p className="mt-2 font-extrabold text-ink">
+                  O que aparece no card
+                </p>
+                <ul className="mt-1 space-y-1 text-muted">
+                  <li>
+                    <span className="font-semibold text-ink">Faixa R$:</span>{" "}
+                    price_range do cadastro
+                  </li>
+                  <li>
+                    <span className="font-semibold text-ink">Fila / promo %:</span>{" "}
+                    typical_wait_min e promo_discount_pct do restaurante
+                  </li>
+                  <li>
+                    <span className="font-semibold text-ink">Cupom / benefício:</span>{" "}
+                    da <em>conta</em> (otimizador da persona), não inventado por
+                    card — com ticket mínimo quando houver
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
           <p className="text-xs text-muted">
             Catálogo do banco · {data.user.preferred_neighborhood} · mesmos
-            cards do Início
+            cards de O Projeto
           </p>
         </div>
 
