@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Lint · Eval security · Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      # Placeholders só para o build CI (sem segredos reais — AGENTS §9)
+      SUPABASE_URL: https://example.supabase.co
+      SUPABASE_PUBLISHABLE_KEY: ci-publishable-placeholder
+      SUPABASE_SECRET_KEY: ci-secret-placeholder
+      AI_ENABLED: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install (frozen lockfile)
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Security evals
+        run: npm run eval:security
+
+      - name: Production build
+        run: npm run build
+
+  # Gate explícito: main só “verde” se o job acima passou
+  ci-ok:
+    name: CI OK
+    needs: [build]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Require build success
+        run: |
+          if [ "${{ needs.build.result }}" != "success" ]; then
+            echo "CI failed: ${{ needs.build.result }}"
+            exit 1
+          fi
+          echo "CI passed"
