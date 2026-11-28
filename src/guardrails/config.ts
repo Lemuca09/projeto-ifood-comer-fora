@@ -22,7 +22,7 @@ export const ABUSE_LIMITS = {
   maxOutputTokensRank: 220,
   /** Brief/campanha/copy (160 cortava JSON no meio → claude_parse). */
   maxOutputTokensAnalytics: 320,
-  /** Concierge “Pergunte onde jantar” (prosa curta + IDs). */
+  /** Concierge “Pergunte onde jantar” (texto natural curto + IDs). */
   maxOutputTokensConcierge: 480,
   /** Sentimento / classificação. */
   maxOutputTokensTiny: 90,

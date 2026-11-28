@@ -8,7 +8,10 @@ import type { CheckInRecord, DineOutVisit, VisitPhase } from "@/domain/dineOut/t
 import { cartTotal } from "@/domain/dineOut/types";
 import { brl } from "@/components/analytics/format";
 import { buildTableGuests } from "@/domain/dineOut/splitBill";
-import { isBenefitUnlocked } from "@/domain/dineOut/progressiveBenefit";
+import {
+  isBenefitUnlocked,
+  requiredCheckIns,
+} from "@/domain/dineOut/progressiveBenefit";
 
 const PHASE_ORDER: VisitPhase[] = [
   "preorder",
@@ -121,14 +124,15 @@ export function VisitJourneyClient({
         at: new Date().toISOString(),
       };
       const checkIns = [...cur.checkIns, record];
-      const need = cur.benefit?.requiredCheckIns ?? 1;
+      const need = requiredCheckIns(cur.partySize);
       const unlocked = isBenefitUnlocked(
         cur.benefit,
         checkIns.length,
         cartTotal(cur.lines),
+        cur.partySize,
       );
       const benefit = cur.benefit
-        ? { ...cur.benefit, unlocked }
+        ? { ...cur.benefit, requiredCheckIns: need, unlocked }
         : null;
       const phase: VisitPhase =
         checkIns.length >= need ? "checked_in" : cur.phase;
@@ -148,7 +152,7 @@ export function VisitJourneyClient({
         );
       } else {
         setToast(
-          `Check-in de ${guestName}: ${checkIns.length}/${need} para liberar o benefício.`,
+          `Check-in de ${guestName}: ${checkIns.length}/${need} — falta o grupo todo para liberar o desconto.`,
         );
       }
     });
@@ -171,9 +175,15 @@ export function VisitJourneyClient({
 
   const preorderLines = visit.lines.filter((l) => l.source === "preorder");
   const total = cartTotal(preorderLines);
-  const need = visit.benefit?.requiredCheckIns ?? Math.min(partySize, 2);
+  const need = requiredCheckIns(partySize);
   const checked = visit.checkIns.length;
   const guests = buildTableGuests(partySize);
+  const discountUnlocked = isBenefitUnlocked(
+    visit.benefit,
+    checked,
+    cartTotal(visit.lines),
+    partySize,
+  );
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
@@ -271,17 +281,17 @@ export function VisitJourneyClient({
               Check-in presencial
             </h2>
             <p className="text-xs text-muted">
-              Benefício progressivo exige {need} check-ins · agora {checked}/{need}
+              Desconto só com check-in de todos · agora {checked}/{need}
             </p>
           </div>
           <span
             className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase ${
-              visit.benefit?.unlocked
+              discountUnlocked
                 ? "bg-emerald-100 text-emerald-800"
                 : "bg-amber-100 text-amber-800"
             }`}
           >
-            {visit.benefit?.unlocked ? "Desconto liberado" : "Desconto pendente"}
+            {discountUnlocked ? "Desconto liberado" : "Desconto pendente"}
           </span>
         </div>
         <ul className="space-y-2">

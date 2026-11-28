@@ -13,7 +13,7 @@ export const discoveryInputSchema = z.object({
   queryText: z.string().max(400).optional(),
   /** Reserva / fluxos internos: ranking local, zero LLM. */
   skipAi: z.boolean().optional(),
-  /** Pedido conversacional: gera resposta em prosa ancorada no banco. */
+  /** Pedido conversacional: gera resposta em texto natural ancorado no banco. */
   conversational: z.boolean().optional(),
   userProfile: z
     .object({

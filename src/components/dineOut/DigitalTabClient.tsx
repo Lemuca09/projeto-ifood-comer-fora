@@ -16,7 +16,10 @@ import {
   upsertVisit,
 } from "@/lib/dineOutSession";
 import { brl } from "@/components/analytics/format";
-import { isBenefitUnlocked } from "@/domain/dineOut/progressiveBenefit";
+import {
+  isBenefitUnlocked,
+  requiredCheckIns,
+} from "@/domain/dineOut/progressiveBenefit";
 import { buildTableGuests } from "@/domain/dineOut/splitBill";
 import { SplitBillSheet } from "@/components/dineOut/SplitBillSheet";
 
@@ -57,6 +60,7 @@ export function DigitalTabClient({ reservationId }: { reservationId: string }) {
     visit.benefit,
     visit.checkIns?.length ?? 0,
     subtotal,
+    visit.partySize,
   );
   const discount =
     unlocked && visit.benefit?.applied
@@ -69,15 +73,27 @@ export function DigitalTabClient({ reservationId }: { reservationId: string }) {
   const split = visit.split;
 
   function refreshBenefit(nextVisit: DineOutVisit) {
+    const need = requiredCheckIns(nextVisit.partySize);
     const u = isBenefitUnlocked(
       nextVisit.benefit,
       nextVisit.checkIns?.length ?? 0,
       cartTotal(nextVisit.lines),
+      nextVisit.partySize,
     );
-    if (!nextVisit.benefit || nextVisit.benefit.unlocked === u) return nextVisit;
+    if (
+      !nextVisit.benefit ||
+      (nextVisit.benefit.unlocked === u &&
+        nextVisit.benefit.requiredCheckIns === need)
+    ) {
+      return nextVisit;
+    }
     return upsertVisit({
       ...nextVisit,
-      benefit: { ...nextVisit.benefit, unlocked: u },
+      benefit: {
+        ...nextVisit.benefit,
+        requiredCheckIns: need,
+        unlocked: u,
+      },
     });
   }
 
@@ -152,7 +168,7 @@ export function DigitalTabClient({ reservationId }: { reservationId: string }) {
     });
   }
 
-  const need = visit.benefit?.requiredCheckIns ?? 1;
+  const need = requiredCheckIns(visit.partySize);
   const checked = visit.checkIns?.length ?? 0;
 
   return (

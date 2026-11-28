@@ -33,7 +33,7 @@ Você recebe um objeto com:
 
 ## Formato de saída (JSON estrito, sem markdown)
 {
-  "answer": "prosa curta, só com nomes e horários da lista",
+  "answer": "texto natural curto, só com nomes e horários da lista",
   "primary_restaurant_id": "uuid do principal OU null",
   "alternative_restaurant_ids": ["uuid"]
 }

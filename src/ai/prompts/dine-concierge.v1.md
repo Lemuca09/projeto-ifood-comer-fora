@@ -28,7 +28,7 @@ Você recebe um objeto JSON com:
 
 ## Formato de saída (JSON estrito, sem markdown)
 {
-  "answer": "texto em prosa, 2–5 frases curtas, só com nomes e horários da lista",
+  "answer": "texto natural, 2–5 frases curtas, só com nomes e horários da lista",
   "primary_restaurant_id": "uuid do principal OU null se lista vazia",
   "alternative_restaurant_ids": ["uuid", "..."]
 }

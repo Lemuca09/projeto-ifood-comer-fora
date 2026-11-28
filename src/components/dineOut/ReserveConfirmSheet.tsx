@@ -322,9 +322,8 @@ export function ReserveConfirmSheet({
               {progressive.benefitType === "prato_gratis" &&
                 progressive.minTicketBrl > 0 && (
                   <p className="mt-1 text-[11px] font-bold text-muted">
-                    Ticket mín. {brl(progressive.minTicketBrl)} ·{" "}
-                    {progressive.requiredCheckIns} check-in
-                    {progressive.requiredCheckIns > 1 ? "s" : ""}
+                    Ticket mín. {brl(progressive.minTicketBrl)} · check-in de
+                    todos ({progressive.requiredCheckIns})
                   </p>
                 )}
             </div>

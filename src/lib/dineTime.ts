@@ -80,7 +80,7 @@ export function nowLocalLabel(date = new Date()): string {
   }).format(date);
 }
 
-/** Relógio amigável para prosa: "16h" / "16h01". */
+/** Relógio amigável para o texto: "16h" / "16h01". */
 export function nowClockLabel(date = new Date()): string {
   const parts = new Intl.DateTimeFormat("pt-BR", {
     timeZone: "America/Sao_Paulo",

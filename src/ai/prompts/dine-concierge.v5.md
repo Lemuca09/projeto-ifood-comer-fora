@@ -43,7 +43,7 @@ Você recebe um objeto com:
 - Fale como concierge do app para o cliente final.
 - NUNCA mencione: banco, API, ground truth, JSON, UUID, fallback, Claude, prompt, seed, GPS, demo, intent técnico.
 - Use `agora` no formato natural.
-- Varie a prosa. Proibido frase-padrão engessada de cupom.
+- Varie o texto. Proibido frase-padrão engessada de cupom.
 
 ## Ordem da resposta (`answer`) - siga `intent`
 - `price_high`: o mais caro/premium do bairro + endereço + slot datado; depois alternativas.
@@ -60,7 +60,7 @@ Você recebe um objeto com:
 {
   "user_intent": "eco do campo intent do payload (mesmo valor)",
   "intent_label": "frase curta do que a pessoa pediu, em português (ex.: restaurante mais caro na Ponta da Praia)",
-  "answer": "prosa curta com nomes, endereços e slots datados da lista",
+  "answer": "texto natural curto com nomes, endereços e slots datados da lista",
   "primary_restaurant_id": "uuid do principal OU null",
   "alternative_restaurant_ids": ["uuid"]
 }

@@ -548,7 +548,7 @@ function allowedHours(ground: GroundRestaurant[], nowLocal: string): Set<number>
 /**
  * Guardrail leve: só barra horário inventado (hora fora dos slots/agora).
  * Não exige marcador de dia — falso positivo gerava ground_time_mismatch
- * e jogava prosa boa do Claude no template local.
+ * e jogava resposta boa do Claude no template local.
  */
 function validateAnswerAgainstGround(
   answer: string,

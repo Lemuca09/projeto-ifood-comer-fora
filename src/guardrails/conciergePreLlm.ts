@@ -65,7 +65,7 @@ export type ConciergeEntities = {
   priceHint?: "baixo" | "medio" | "alto";
   /** Pediu proximidade (“perto de mim”) — pode coexistir com culinária. */
   wantsProximity: boolean;
-  /** Intenção dominante da pergunta (ranking + prosa). */
+  /** Intenção dominante da pergunta (ranking + texto natural). */
   intent: ConciergeIntent;
   intentInScope: boolean;
 };

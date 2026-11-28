@@ -11,14 +11,9 @@ export function partyBenefitMultiplier(partySize: number): number {
   return 2.25;
 }
 
-/** Check-ins mínimos para liberar o desconto progressivo. */
+/** Check-ins para liberar o desconto: todos da mesa (cap demo = 8 assentos). */
 export function requiredCheckIns(partySize: number): number {
-  if (partySize <= 1) return 1;
-  if (partySize === 2) return 2;
-  if (partySize === 3) return 2;
-  if (partySize === 4) return 3;
-  if (partySize <= 6) return 4;
-  return Math.ceil(partySize * 0.75);
+  return Math.max(1, Math.min(Math.floor(partySize) || 1, 8));
 }
 
 export type ProgressivePreview = {
@@ -92,7 +87,7 @@ export function progressiveBenefitForParty(params: {
       minTicketBrl: minTicket,
       requiredCheckIns: need,
       title: copy.title,
-      detail: `${copy.detail} · grupo ${params.partySize} · ${need} check-in${need > 1 ? "s" : ""} para liberar`,
+      detail: `${copy.detail} · grupo ${params.partySize} · check-in de todos (${need}) para liberar`,
       benefitType: "prato_gratis",
       freeDishName: params.freeDishName,
     };
@@ -123,7 +118,7 @@ export function progressiveBenefitForParty(params: {
     minTicketBrl: minTicket,
     requiredCheckIns: need,
     title: `${copy.title} · grupo ${params.partySize} pessoas`,
-    detail: `${kindLabel} ${brlShort(base)} → ${brlShort(progressiveValue)} (${mult.toFixed(2)}×) · ticket mín. ${brlShort(minTicket)} · ${need} check-ins.`,
+    detail: `${kindLabel} ${brlShort(base)} → ${brlShort(progressiveValue)} (${mult.toFixed(2)}×) · ticket mín. ${brlShort(minTicket)} · check-in de todos (${need}).`,
     benefitType: params.benefitType,
     freeDishName: params.freeDishName,
   };
@@ -157,10 +152,16 @@ export function isBenefitUnlocked(
   benefit: AppliedBenefit | null | undefined,
   checkedInCount: number,
   comandaTotalBrl: number,
+  partySize?: number,
 ): boolean {
   if (!benefit?.applied) return false;
   if (benefit.benefitType === "nenhum") return false;
-  const need = benefit.requiredCheckIns ?? 1;
+  // Sempre exige a mesa completa quando o partySize é conhecido
+  // (ignora limiar parcial antigo persistido na visita).
+  const need =
+    partySize != null
+      ? requiredCheckIns(partySize)
+      : (benefit.requiredCheckIns ?? 1);
   if (checkedInCount < need) return false;
   if (benefit.minTicketBrl > 0 && comandaTotalBrl < benefit.minTicketBrl) {
     return false;
