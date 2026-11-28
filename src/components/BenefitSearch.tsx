@@ -155,18 +155,6 @@ export function BenefitSearch() {
                     ? "Pedido não atendido"
                     : "Concierge Comer Fora"}
                 </p>
-                {!result.blocked && (
-                  <p className="text-[10px] font-semibold text-muted">
-                    {result.intentLabel
-                      ? `Intenção: ${result.intentLabel}`
-                      : ""}
-                    {result.answerIsFallback === false
-                      ? `${result.intentLabel ? " · " : ""}Claude`
-                      : result.aiFailReason
-                        ? `${result.intentLabel ? " · " : ""}Local (fallback Claude) · ${result.aiFailReason}`
-                        : ""}
-                  </p>
-                )}
               </div>
               <p className="mt-2 text-sm leading-relaxed text-ink">
                 {result.answer}
