@@ -175,16 +175,15 @@ export function BenefitSearch() {
                       href={`/cliente/restaurante/${item.restaurant.id}`}
                       className="block rounded-if bg-page px-3 py-2.5 text-sm transition hover:border-ifood/30 hover:bg-ifood-soft/30"
                     >
-                      <span className="font-extrabold">
+                      <p className="break-words font-extrabold">
                         #{item.rank} {item.restaurant.name}
-                      </span>
-                      <span className="text-muted">
-                        {" "}
-                        · {item.cuisine ?? item.reason_label} ·{" "}
+                      </p>
+                      <p className="break-words text-muted">
+                        {item.cuisine ?? item.reason_label} ·{" "}
                         {priceRangeLabel(item.restaurant.price_range)}
-                      </span>
+                      </p>
                       {slots.length > 0 && (
-                        <p className="mt-1 text-[11px] font-semibold text-[var(--ifdl-color-success)]">
+                        <p className="mt-1 break-words text-[11px] font-semibold text-[var(--ifdl-color-success)]">
                           Mesas livres: {slots.join(" · ")}
                         </p>
                       )}

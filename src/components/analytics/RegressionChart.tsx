@@ -15,14 +15,14 @@ import { ChartTitle } from "@/components/analytics/MetricInfoTip";
 import { M } from "@/components/analytics/metricInfoHelp";
 
 const FEATURE_LABELS: Record<string, string> = {
-  frequencia: "Quantas vezes volta",
-  taxa_cupom: "Dependência de cupom",
-  recencia_dias: "Dias sem visitar",
-  risco_churn: "Risco de parar de voltar",
-  beneficio_brl: "Valor do benefício",
-  sensibilidade_preco: "Sensibilidade a preço",
-  visitas_comer_fora: "Visitas Comer Fora (90d)",
-  nps: "Probabilidade de recomendação",
+  frequencia: "Frequência",
+  taxa_cupom: "Cupom",
+  recencia_dias: "Recência",
+  risco_churn: "Churn",
+  beneficio_brl: "Benefício R$",
+  sensibilidade_preco: "Preço",
+  visitas_comer_fora: "Visitas CF",
+  nps: "NPS / reco",
 };
 
 export function RegressionChart() {
@@ -79,8 +79,9 @@ export function RegressionChart() {
             <YAxis
               type="category"
               dataKey="name"
-              width={150}
+              width={88}
               tick={{ fontSize: 10 }}
+              interval={0}
             />
             <Tooltip
               formatter={(v: number, _n, item) => [

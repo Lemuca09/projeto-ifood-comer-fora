@@ -25,19 +25,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const fatigue = data?.diagnosis.fatigue_risk_pct ?? data?.user.user_fatigue_score;
 
   return (
-    <div className="if-shell pb-20 md:pb-10">
+    <div className="if-shell pb-20 lg:pb-10">
       <header className="if-header">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-6">
-            <div>
-              <p className="font-title text-2xl font-extrabold leading-none tracking-tight text-ifood sm:text-[28px]">
+          <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-6">
+            <div className="min-w-0 shrink">
+              <p className="font-title text-xl font-extrabold leading-none tracking-tight text-ifood sm:text-2xl lg:text-[28px]">
                 Comer Fora
               </p>
-              <p className="mt-1 text-xs text-muted sm:text-sm">
+              <p className="mt-1 truncate text-xs text-muted sm:text-sm">
                 Delivery → Ocasião Gastronômica
               </p>
             </div>
-            <nav className="hidden items-center gap-1 lg:flex" aria-label="Principal">
+            <nav
+              className="hidden items-center gap-1 lg:flex"
+              aria-label="Principal"
+            >
               <Link href="/" className={navClass(home)}>
                 O Projeto
               </Link>
@@ -53,12 +56,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </nav>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <button
               type="button"
               onClick={() => void regenerate()}
               disabled={regenerating}
-              className="hidden rounded-if border border-ifood/30 bg-ifood-soft px-3 py-2 text-xs font-extrabold text-ifood transition hover:bg-ifood hover:text-white disabled:opacity-50 sm:inline-flex"
+              className="hidden rounded-if border border-ifood/30 bg-ifood-soft px-3 py-2 text-xs font-extrabold text-ifood transition hover:bg-ifood hover:text-white disabled:opacity-50 lg:inline-flex"
               title="Nova amostra sintética - recalcula KPIs, clusters e gráficos"
             >
               {regenerating ? "Regenerando…" : "Regerar Usuários"}
@@ -69,7 +72,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
-              className="flex max-w-[220px] items-center gap-2 rounded-full border border-[var(--ifdl-color-border)] bg-white py-1.5 pl-1.5 pr-3 text-left shadow-sm transition hover:border-ifood/40"
+              className="flex max-w-[160px] items-center gap-2 rounded-full border border-[var(--ifdl-color-border)] bg-white py-1.5 pl-1.5 pr-2.5 text-left shadow-sm transition hover:border-ifood/40 sm:max-w-[220px] sm:pr-3"
               aria-label="Abrir perfil da sessão"
             >
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-ifood text-sm font-extrabold text-white">

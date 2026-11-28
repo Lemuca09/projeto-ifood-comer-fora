@@ -113,9 +113,9 @@ export function UsersMetricsTable() {
             }}
           />
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex w-full min-w-0 flex-wrap gap-2">
           <input
-            className="rounded-if border border-[var(--ifdl-color-border)] px-3 py-2 text-sm"
+            className="min-w-0 flex-1 rounded-if border border-[var(--ifdl-color-border)] px-3 py-2 text-sm sm:max-w-xs"
             placeholder="Buscar nome ou código"
             value={q}
             onChange={(e) => {
@@ -124,7 +124,7 @@ export function UsersMetricsTable() {
             }}
           />
           <select
-            className="rounded-if border border-[var(--ifdl-color-border)] px-3 py-2 text-sm"
+            className="min-w-0 max-w-full rounded-if border border-[var(--ifdl-color-border)] px-3 py-2 text-sm"
             value={clusterFilter}
             onChange={(e) => {
               setClusterFilter(e.target.value as ClusterId | "all");
@@ -141,8 +141,8 @@ export function UsersMetricsTable() {
         </div>
       </div>
 
-      <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[900px] text-left text-xs">
+      <div className="mt-4 -mx-1 overflow-x-auto overscroll-x-contain px-1">
+        <table className="w-full min-w-[640px] text-left text-xs sm:min-w-[820px]">
           <thead>
             <tr className="border-b border-[var(--ifdl-color-border)] text-muted">
               <th className="cursor-pointer py-2 pr-2" onClick={() => toggleSort("display_name")}>

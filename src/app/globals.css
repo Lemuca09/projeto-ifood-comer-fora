@@ -7,6 +7,7 @@
 html,
 body {
   min-height: 100%;
+  overflow-x: clip;
 }
 
 body {
@@ -64,7 +65,7 @@ body {
 
   /* Bottom nav só no mobile / DevTools phone */
   .if-bottom-nav {
-    @apply fixed bottom-0 left-0 right-0 z-30 flex justify-around border-t border-[var(--ifdl-color-border)] bg-white px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 md:hidden;
+    @apply fixed bottom-0 left-0 right-0 z-30 flex justify-around border-t border-[var(--ifdl-color-border)] bg-white px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 lg:hidden;
   }
 
   .if-nav-item {

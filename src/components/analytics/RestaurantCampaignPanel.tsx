@@ -81,8 +81,8 @@ export function RestaurantCampaignPanel() {
       </div>
 
       <div className="mt-4 min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] text-left text-xs">
+        <div className="-mx-1 overflow-x-auto overscroll-x-contain px-1">
+          <table className="w-full min-w-[480px] text-left text-xs sm:min-w-[560px]">
             <thead>
               <tr className="border-b border-[var(--ifdl-color-border)] text-muted">
                 <th className="py-2 pr-2">Restaurante</th>

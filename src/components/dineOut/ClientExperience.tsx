@@ -166,7 +166,7 @@ export function ClientExperience() {
               <div
                 id="reco-client-hint"
                 role="tooltip"
-                className="pointer-events-none absolute left-0 top-full z-[80] mt-2 w-[min(92vw,24rem)] rounded-if border border-[var(--ifdl-color-border)] bg-white p-3 text-left text-[11px] leading-relaxed text-ink opacity-0 shadow-if transition duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
+                className="pointer-events-none absolute left-1/2 top-full z-[80] mt-2 w-[min(92vw,24rem)] -translate-x-1/2 rounded-if border border-[var(--ifdl-color-border)] bg-white p-3 text-left text-[11px] leading-relaxed text-ink opacity-0 shadow-if transition duration-150 group-hover:opacity-100 group-focus-within:opacity-100 sm:left-0 sm:translate-x-0"
               >
                 <p className="font-extrabold text-ifood">
                   Como montei esta vitrine
@@ -255,7 +255,7 @@ export function ClientExperience() {
                   <div
                     className={`relative h-32 bg-gradient-to-br sm:h-36 ${COVER[idx % COVER.length]}`}
                   >
-                    <span className="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-bold text-ifood shadow-sm">
+                    <span className="absolute left-3 top-3 max-w-[calc(100%-5.5rem)] truncate rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-bold text-ifood shadow-sm">
                       #{item.rank} · {item.reason_label}
                     </span>
                     <span className="absolute bottom-3 right-3 rounded-full bg-black/45 px-2 py-1 text-[11px] font-bold text-white">
