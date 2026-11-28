@@ -46,6 +46,7 @@ const conciergeIntentSchema = z.enum([
   "time",
   "price_high",
   "price_low",
+  "wait_low",
   "general",
 ]);
 
@@ -78,6 +79,8 @@ export type GroundRestaurant = {
   vagasProximoSlot: number;
   /** Proxy de “perto”: mesmo bairro da busca + slot mais cedo. */
   proximidadeScore: number;
+  /** Fila típica em minutos (banco); null se desconhecido. */
+  esperaMin: number | null;
 };
 
 export type ConciergeResult = {
@@ -240,6 +243,21 @@ export function buildGroundRestaurants(
         proximidadeScore * 0.25 +
         (nearHour ? 10 : 0) +
         (match ? 5 : 0);
+    } else if (intent === "wait_low") {
+      // Pouca fila: espera típica baixa + mesa que libera antes + ociosidade.
+      const wait = Number(r.typical_wait_min);
+      const waitScore = Number.isFinite(wait)
+        ? Math.max(0, 40 - wait) * 4
+        : 20;
+      const idle = Number(r.idle_capacity_pct);
+      const idleScore = Number.isFinite(idle) ? idle * 0.5 : 0;
+      _score =
+        waitScore +
+        idleScore +
+        proximidadeScore * 0.8 +
+        Math.min(r.remaining, 15) +
+        (nearHour ? 10 : 0) +
+        (match ? 8 : 0);
     } else if (intent === "benefit") {
       _score =
         (promoPct > 0 ? 80 : 0) +
@@ -282,6 +300,8 @@ export function buildGroundRestaurants(
       matchCulinaria: match,
       vagasProximoSlot: r.remaining,
       proximidadeScore,
+      esperaMin:
+        typeof r.typical_wait_min === "number" ? r.typical_wait_min : null,
       _score,
     };
   });
@@ -444,6 +464,12 @@ function localAnswer(params: {
     answer = `${nome}, agora são ${params.nowClock}. O mais caro em ${params.neighborhood} é ${placeLine(primary, { withAddress: true, cuisine: true })}.`;
   } else if (params.intent === "price_low") {
     answer = `${nome}, agora são ${params.nowClock}. O mais em conta em ${params.neighborhood} é ${placeLine(primary, { withAddress: true, cuisine: true })}.`;
+  } else if (params.intent === "wait_low") {
+    const waitBit =
+      typeof primary.esperaMin === "number"
+        ? ` (fila típica ~${primary.esperaMin} min)`
+        : "";
+    answer = `${nome}, agora são ${params.nowClock}. Para entrar com pouca fila em ${params.neighborhood}, vai de ${placeLine(primary, { withAddress: true })}${waitBit}.`;
   } else if (params.intent === "benefit") {
     const promoHit = withPromo[0] ?? primary;
     answer = `${nome}, agora são ${params.nowClock}. Em ${params.neighborhood}, vale olhar ${placeLine(promoHit)}.`;
@@ -674,6 +700,7 @@ export async function generateDineConciergeAnswer(params: {
       diaOffsetProximo: g.diaOffsetProximo,
       matchCulinariaFavorita: g.matchCulinaria,
       proximidadeScore: g.proximidadeScore,
+      esperaMin: g.esperaMin,
     })),
     entidades: pre.entities,
     NAO_CONFIAVEL: {

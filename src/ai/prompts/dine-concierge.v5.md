@@ -7,7 +7,7 @@ Você recebe um objeto com:
 - `agora`: horário atual da consulta (ex.: `21h05`)
 - `agoraCompleto`: data/hora local completa
 - `bairroBusca`: bairro escolhido na busca
-- `intent`: intenção dominante já classificada (`proximity` | `cuisine` | `benefit` | `time` | `price_high` | `price_low` | `general`)
+- `intent`: intenção dominante já classificada (`proximity` | `cuisine` | `benefit` | `time` | `price_high` | `price_low` | `wait_low` | `general`)
 - `intent_label_sugerido`: rótulo curto da intenção (pode refinar no `intent_label` de saída)
 - `perfil`: preferências reais do usuário
 - `beneficioUsuario`: benefício ativo do usuário (pode ser `tipo: "nenhum"`)
@@ -22,7 +22,8 @@ Você recebe um objeto com:
 4. Se não houver match de culinária na lista, diga com transparência e ofereça alternativas (com `culinaria` citada).
 5. Se `intent=price_high`, o principal DEVE ser o de maior `faixaPreco`. Não force a culinária do perfil.
 6. Se `intent=price_low`, o principal DEVE ser o de menor `faixaPreco`.
-7. Se a pergunta cita um bairro, cite esse bairro na resposta.
+7. Se `intent=wait_low`, priorize menor `esperaMin` / mesa que libera antes. Fale em “pouca fila” e cite a espera se houver.
+8. Se a pergunta cita um bairro, cite esse bairro na resposta.
 
 ## Horário e dia (crítico)
 1. Compare sempre com `agora`. Nunca sugira um horário que pareça no passado no mesmo dia.
@@ -47,6 +48,7 @@ Você recebe um objeto com:
 ## Ordem da resposta (`answer`) - siga `intent`
 - `price_high`: o mais caro/premium do bairro + endereço + slot datado; depois alternativas.
 - `price_low`: o mais em conta + slot; depois alternativas.
+- `wait_low`: o de menor fila/espera + slot; cite `esperaMin` se existir.
 - `proximity`: lugar mais à mão + endereço + slot; depois alternativas.
 - `cuisine` / `benefit` / `time` / `general`: priorize conforme a intenção, sempre com slot datado.
 
@@ -65,5 +67,5 @@ Você recebe um objeto com:
 
 IDs DEVEM existir em `restaurantes`. Máximo 2 alternativas.
 `user_intent` DEVE ser exatamente igual a `intent` do payload.
-O `primary_restaurant_id` deve ser o 1º da lista quando `intent` for `proximity`, `price_high` ou `price_low`.
+O `primary_restaurant_id` deve ser o 1º da lista quando `intent` for `proximity`, `price_high`, `price_low` ou `wait_low`.
 Sem campos extras.

@@ -31,7 +31,7 @@ const CUISINES = [
 ] as const;
 
 const IN_SCOPE =
-  /\b(jantar|almo[cç]ar|comer|restaurante|mesa|reserva|sal[aã]o|comer\s+fora|onde\s+(jantar|comer|acho|fica|encontrar)|culin[aá]ria|comida|bairro|grupo|pessoas|barato|caro|premium|promo|cupom|giftback|prato|pert[oa]|pr[oó]xim|dist[aâ]ncia|faixa\s+de\s+pre[cç]o)\b/i;
+  /\b(jantar|almo[cç]ar|comer|restaurantes?|mesa|reserva|sal[aã]o|comer\s+fora|onde\s+(jantar|comer|acho|fica|encontrar)|culin[aá]ria|comida|bairro|grupo|pessoas|barato|caro|premium|promo|cupom|giftback|prato|pert[oa]|pr[oó]xim|dist[aâ]ncia|faixa\s+de\s+pre[cç]o|fila|espera|r[aá]pido|ocios|indique|recomende)\b/i;
 
 export type ConciergeIntent =
   | "proximity"
@@ -40,6 +40,7 @@ export type ConciergeIntent =
   | "time"
   | "price_high"
   | "price_low"
+  | "wait_low"
   | "general";
 
 export const CONCIERGE_INTENT_LABELS: Record<ConciergeIntent, string> = {
@@ -49,6 +50,7 @@ export const CONCIERGE_INTENT_LABELS: Record<ConciergeIntent, string> = {
   time: "horário",
   price_high: "restaurante mais caro / premium",
   price_low: "restaurante mais barato / econômico",
+  wait_low: "pouca fila / espera curta",
   general: "sugestão geral para jantar",
 };
 
@@ -80,7 +82,7 @@ export type PreLlmResult = {
 };
 
 export const SAFE_REDIRECT_ANSWER =
-  "Não posso te ajudar com esse pedido. Para eu indicar um lugar no Comer Fora, escreva sobre comida, bairro, horário ou proximidade - por exemplo: “italiana no Gonzaga às 20h”, “almoço perto de mim” ou “onde jantar com cupom”.";
+  "Não posso te ajudar com esse pedido. Para eu indicar um lugar no Comer Fora, escreva sobre comida, bairro, horário, fila ou proximidade - por exemplo: “italiana no Gonzaga às 20h”, “pouca fila de espera” ou “onde jantar com cupom”.";
 
 function extractEntities(text: string): ConciergeEntities {
   const lower = text.toLowerCase();
@@ -121,13 +123,19 @@ function extractEntities(text: string): ConciergeEntities {
       text,
     );
 
-  // Prioridade: preço explícito > culinária pedida > proximidade > benefício > horário.
-  // “japonesa mais perto” NÃO pode virar só proximity (bug do demo).
+  const wantsLowWait =
+    /\b(pouca\s+fila|sem\s+fila|fila\s+(curta|baixa|pequena)|espera\s+(curta|baixa|r[aá]pida)|pouca\s+espera|r[aá]pido\s+(pra\s+)?entrar|menos\s+espera|sem\s+esperar)\b/i.test(
+      text,
+    );
+
+  // Prioridade: preço > fila/espera > culinária > proximidade > benefício > horário.
   let intent: ConciergeIntent = "general";
   if (priceHint === "alto") {
     intent = "price_high";
   } else if (priceHint === "baixo") {
     intent = "price_low";
+  } else if (wantsLowWait) {
+    intent = "wait_low";
   } else if (cuisine) {
     intent = "cuisine";
   } else if (wantsProximity) {
@@ -150,8 +158,10 @@ function extractEntities(text: string): ConciergeEntities {
     !!neighborhood ||
     !!partySize ||
     wantsProximity ||
+    wantsLowWait ||
     intent === "price_high" ||
-    intent === "price_low";
+    intent === "price_low" ||
+    intent === "wait_low";
   const intentInScope = !OUT_OF_SCOPE.test(text) && diningSignal;
 
   return {
