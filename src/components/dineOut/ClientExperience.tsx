@@ -276,8 +276,12 @@ export function ClientExperience() {
                       </p>
                       {typeof item.restaurant.typical_wait_min === "number" && (
                         <p className="text-sm font-bold text-[var(--ifdl-color-success)]">
-                          Fila típica ~{item.restaurant.typical_wait_min} min ·
-                          promo {item.restaurant.promo_discount_pct ?? 0}%
+                          Fila típica ~{item.restaurant.typical_wait_min} min
+                          {typeof item.restaurant.promo_discount_pct ===
+                            "number" &&
+                          item.restaurant.promo_discount_pct > 0
+                            ? ` · promo ${item.restaurant.promo_discount_pct}%`
+                            : ""}
                         </p>
                       )}
                       <div
@@ -387,8 +391,11 @@ export function ClientExperience() {
                       </p>
                       {typeof h.typicalWaitMin === "number" && (
                         <p className="text-sm font-bold text-[var(--ifdl-color-success)]">
-                          Fila típica ~{h.typicalWaitMin} min · promo{" "}
-                          {h.promoDiscountPct ?? 0}%
+                          Fila típica ~{h.typicalWaitMin} min
+                          {typeof h.promoDiscountPct === "number" &&
+                          h.promoDiscountPct > 0
+                            ? ` · promo ${h.promoDiscountPct}%`
+                            : ""}
                         </p>
                       )}
                       <div

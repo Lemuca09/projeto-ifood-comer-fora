@@ -40,9 +40,17 @@ export type DiscoveryResult = {
   discoveryId: string;
   recommendationId: string;
   isFallback: boolean;
+  /** Pedido fora de escopo / bloqueado pela guarda (sem chamar LLM). */
+  blocked?: boolean;
   /** Resposta conversacional do concierge (Claude ou template local). */
   answer?: string;
   answerIsFallback?: boolean;
+  /** Intenção detectada / ecoada pelo Claude (`price_high`, `proximity`, …). */
+  userIntent?: string;
+  /** Frase curta do que a pessoa pediu. */
+  intentLabel?: string;
+  /** Motivo do fallback Claude (créditos, timeout, schema, etc.). */
+  aiFailReason?: string;
   nowLocal?: string;
   items: Array<{
     rank: number;

@@ -34,6 +34,8 @@ export type PartnerDashboard = {
 export type PartnerMarginHints = {
   avgMarginPct?: number;
   lifetimeMarginBrl?: number;
+  /** Ociosidade 0–1 vinda dos slots / idle_capacity_pct. */
+  idlePct?: number;
 };
 
 /** KPIs sintéticos determinísticos - prova de valor para adesão do parceiro. */
@@ -53,7 +55,11 @@ export function buildPartnerDashboard(
     (hints.lifetimeMarginBrl ?? 12000 + rnd() * 8000).toFixed(0),
   );
 
-  const baseOcc = 42 + rnd() * 12;
+  // Ocupação base = 1 − ociosidade observada nos slots (sazonalidade).
+  const baseOcc =
+    hints.idlePct != null
+      ? Math.min(92, Math.max(8, (1 - hints.idlePct) * 100))
+      : 42 + rnd() * 12;
   const baseTicket = 68 + rnd() * 28;
   const baseStay = 55 + rnd() * 18;
   const baseRec = 18 + rnd() * 10;

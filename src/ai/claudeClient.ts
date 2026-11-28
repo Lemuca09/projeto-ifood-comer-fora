@@ -141,7 +141,8 @@ export async function callClaudeText(params: {
     lastFailReason = null;
     setLlmCache(key, text);
   } else if (!lastFailReason) {
-    lastFailReason = "claude_empty_or_auth";
+    // Throttle esgotou a fila sem chamar a API (não é billing).
+    lastFailReason = "llm_throttled";
   }
   return text;
 }

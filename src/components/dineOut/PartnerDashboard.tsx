@@ -44,7 +44,11 @@ export function PartnerDashboard() {
       seed,
       r?.name ?? "Casa Demo Comer Fora",
       r?.neighborhood ?? "Gonzaga",
-      { avgMarginPct, lifetimeMarginBrl },
+      {
+        avgMarginPct,
+        lifetimeMarginBrl,
+        idlePct: r?.idlePct,
+      },
     );
   }, [dash]);
 

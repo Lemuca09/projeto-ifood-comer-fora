@@ -77,11 +77,18 @@ const JOURNEY_2 = [
   },
 ] as const;
 
-const INTEL = [
+const AI_CAPABILITIES = [
   {
     title: "Concierge gastronômico",
-    copy: "IA em linguagem natural com horários e benefícios reais. Sem inventar mesa ou desconto.",
+    copy: "Claude em linguagem natural com horários e benefícios reais. Sem inventar mesa ou desconto.",
   },
+  {
+    title: "Leitura rápida (Métricas)",
+    copy: "Resumo executivo sob demanda com Claude a partir dos KPIs da demo. Sem Claude, cai no briefing local.",
+  },
+] as const;
+
+const DECISION_CAPABILITIES = [
   {
     title: "Motor anti-churn",
     copy: "Detecta queda de visitas e dispara benefício personalizado para reconquistar o cliente.",
@@ -352,18 +359,49 @@ export function HomeExperience() {
         </ol>
       </section>
 
-      {/* 5 - Inteligência */}
+      {/* 5 - IA generativa */}
       <section className="space-y-5">
         <div className="max-w-2xl">
           <h2 className="font-title text-2xl font-extrabold text-ink sm:text-[1.75rem]">
-            Inteligência por trás da experiência
+            IA na experiência
           </h2>
           <p className="mt-1 text-sm text-muted">
-            Dados do salão + IA com guarda. Sem alucinar mesa ou preço.
+            Dois pontos usam Claude: o concierge (jornada) e a leitura rápida
+            das Métricas. Os números e as decisões de benefício vêm do motor
+            local; o modelo só narra com base neles.
           </p>
         </div>
-        <div className="grid gap-4 md:grid-cols-3">
-          {INTEL.map((card) => (
+        <div className="grid gap-4 md:grid-cols-2">
+          {AI_CAPABILITIES.map((card) => (
+            <article
+              key={card.title}
+              className="rounded-if-lg border border-[var(--ifdl-color-border)] bg-white p-5 shadow-[var(--ifdl-shadow-card)]"
+            >
+              <div className="mb-3 h-1 w-8 rounded-full bg-ifood" />
+              <h3 className="font-title text-base font-extrabold text-ink">
+                {card.title}
+              </h3>
+              <p className="mt-2 text-xs leading-relaxed text-muted">
+                {card.copy}
+              </p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* 6 - Decisão e margem (sem LLM) */}
+      <section className="space-y-5">
+        <div className="max-w-2xl">
+          <h2 className="font-title text-2xl font-extrabold text-ink sm:text-[1.75rem]">
+            Decisão e margem
+          </h2>
+          <p className="mt-1 text-sm text-muted">
+            Otimizador e regras determinísticas: quem recebe benefício, quanto e
+            com qual trava de ticket/margem.
+          </p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          {DECISION_CAPABILITIES.map((card) => (
             <article
               key={card.title}
               className="rounded-if-lg border border-[var(--ifdl-color-border)] bg-white p-5 shadow-[var(--ifdl-shadow-card)]"
@@ -393,11 +431,6 @@ export function HomeExperience() {
           </button>
           {techOpen && (
             <div className="space-y-4 border-t border-[var(--ifdl-color-border)] px-4 py-4 sm:px-5">
-              <p className="text-xs leading-relaxed text-muted">
-                Ground truth no Supabase (slots, capacidade, promo do
-                restaurante). Claude só narra/ranqueia candidatos elegíveis.
-                Guardrails pré e pós-LLM; fallback local se a IA falhar.
-              </p>
               {data ? (
                 <DiagnosisPanel data={data} />
               ) : (
@@ -416,7 +449,7 @@ export function HomeExperience() {
         </div>
       </section>
 
-      {/* 6 - Impacto + CTA */}
+      {/* 7 - Impacto + CTA */}
       <section className="space-y-5">
         <div className="max-w-2xl">
           <h2 className="font-title text-2xl font-extrabold text-ink sm:text-[1.75rem]">

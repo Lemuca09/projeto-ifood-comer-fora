@@ -191,3 +191,32 @@ export function getSeasonalityContext(date: Date): SeasonalityContext {
 export function currentSeasonalityContext(): SeasonalityContext {
   return getSeasonalityContext(new Date());
 }
+
+/**
+ * Ocupação esperada do salão (0–1) alinhada à sazonalidade do case.
+ * Segunda quase vazia; sex/sáb/dom cheios; feriado/salário ajustam.
+ */
+export function expectedOccupancyFraction(date: Date): number {
+  const ctx = getSeasonalityContext(date);
+  // 0=dom … 6=sáb
+  const byDow: Record<number, number> = {
+    0: 0.86, // domingo
+    1: 0.14, // segunda
+    2: 0.28,
+    3: 0.36,
+    4: 0.44,
+    5: 0.78, // sexta
+    6: 0.92, // sábado
+  };
+  let occ = byDow[ctx.weekday] ?? 0.4;
+  // demandPressure ~0.55–1.6 → empurra ocupação
+  occ *= 0.75 + 0.25 * ctx.demandPressure;
+  if (ctx.isHolidayEve) occ = Math.max(occ, 0.94);
+  if (ctx.weekday === 1 && !ctx.isPaydayWindow) occ = Math.min(occ, 0.22);
+  return Number(Math.max(0.05, Math.min(0.98, occ)).toFixed(3));
+}
+
+/** Ociosidade = 1 − ocupação. */
+export function expectedIdleFraction(date: Date): number {
+  return Number((1 - expectedOccupancyFraction(date)).toFixed(3));
+}

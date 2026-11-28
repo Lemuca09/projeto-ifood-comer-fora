@@ -7,9 +7,12 @@ export const GUARD_THRESHOLDS = {
   bloquearMin: 70,
 } as const;
 
-/** Abuso + orçamento de tokens [PREMISSA] AGENTS §7.5 */
+/**
+ * Abuso + orçamento de tokens [PREMISSA] AGENTS §7.5.
+ * Valores de chamada/IP/sessão ficam *mais estritos* que o piso do AGENTS
+ * (10/min sessão, 20/min IP, 20/sessão) - adequado à demo pública.
+ */
 export const ABUSE_LIMITS = {
-  /** RPM baixo - demo não precisa de rajada. */
   aiPerSessionPerMin: 2,
   aiPerIpPerMin: 4,
   aiPerSessionTotal: 8,
@@ -17,15 +20,16 @@ export const ABUSE_LIMITS = {
   maxOutputTokens: 520,
   /** Ranking: ≤3 itens JSON. */
   maxOutputTokensRank: 220,
-  /** Brief/campanha/copy. */
-  maxOutputTokensAnalytics: 160,
+  /** Brief/campanha/copy (160 cortava JSON no meio → claude_parse). */
+  maxOutputTokensAnalytics: 320,
   /** Concierge “Pergunte onde jantar” (prosa curta + IDs). */
   maxOutputTokensConcierge: 480,
   /** Sentimento / classificação. */
   maxOutputTokensTiny: 90,
   /** Máx. candidatos enviados ao ranker. */
   maxRankCandidates: 8,
-  timeoutMs: 10_000,
+  /** Timeout da chamada Anthropic (Haiku costuma responder em 2–4 s). */
+  timeoutMs: 12_000,
   maxRetries: 0,
   globalDailyAiCalls: 50,
   writePerSessionPerMin: 30,

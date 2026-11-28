@@ -136,59 +136,87 @@ export function BenefitSearch() {
       {result && (
         <div className="space-y-3">
           {result.answer && (
-            <div className="rounded-if border border-ifood/15 bg-ifood-soft/40 px-3 py-3">
+            <div
+              className={
+                result.blocked
+                  ? "rounded-if border border-amber-200 bg-amber-50 px-3 py-3"
+                  : "rounded-if border border-ifood/15 bg-ifood-soft/40 px-3 py-3"
+              }
+            >
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-[10px] font-bold uppercase tracking-wide text-ifood">
-                  Concierge Comer Fora
+                <p
+                  className={
+                    result.blocked
+                      ? "text-[10px] font-bold uppercase tracking-wide text-amber-800"
+                      : "text-[10px] font-bold uppercase tracking-wide text-ifood"
+                  }
+                >
+                  {result.blocked
+                    ? "Pedido não atendido"
+                    : "Concierge Comer Fora"}
                 </p>
+                {!result.blocked && (
+                  <p className="text-[10px] font-semibold text-muted">
+                    {result.intentLabel
+                      ? `Intenção: ${result.intentLabel}`
+                      : ""}
+                    {result.answerIsFallback === false
+                      ? `${result.intentLabel ? " · " : ""}Claude`
+                      : result.aiFailReason
+                        ? `${result.intentLabel ? " · " : ""}Local (fallback Claude) · ${result.aiFailReason}`
+                        : ""}
+                  </p>
+                )}
               </div>
               <p className="mt-2 text-sm leading-relaxed text-ink">
                 {result.answer}
               </p>
             </div>
           )}
-          <ul className="space-y-2">
-            {result.items.map((item) => {
-              const slots =
-                item.available_slots?.map(formatSlotLocal) ??
-                (item.next_slot
-                  ? [formatSlotLocal(item.next_slot.starts_at)]
-                  : []);
-              return (
-                <li key={item.restaurant.id}>
-                  <Link
-                    href={`/cliente/restaurante/${item.restaurant.id}`}
-                    className="block rounded-if bg-page px-3 py-2.5 text-sm transition hover:border-ifood/30 hover:bg-ifood-soft/30"
-                  >
-                    <span className="font-extrabold">
-                      #{item.rank} {item.restaurant.name}
-                    </span>
-                    <span className="text-muted">
-                      {" "}
-                      · {item.cuisine ?? item.reason_label} ·{" "}
-                      {priceRangeLabel(item.restaurant.price_range)}
-                    </span>
-                    {slots.length > 0 && (
-                      <p className="mt-1 text-[11px] font-semibold text-[var(--ifdl-color-success)]">
-                        Mesas livres: {slots.join(" · ")}
-                      </p>
-                    )}
-                    {typeof item.promo_discount_pct === "number" &&
-                      item.promo_discount_pct > 0 && (
-                        <p className="text-[11px] font-semibold text-ifood">
-                          {item.promo_discount_pct}% de desconto no salão
+          {!result.blocked && (
+            <ul className="space-y-2">
+              {result.items.map((item) => {
+                const slots =
+                  item.available_slots?.map(formatSlotLocal) ??
+                  (item.next_slot
+                    ? [formatSlotLocal(item.next_slot.starts_at)]
+                    : []);
+                return (
+                  <li key={item.restaurant.id}>
+                    <Link
+                      href={`/cliente/restaurante/${item.restaurant.id}`}
+                      className="block rounded-if bg-page px-3 py-2.5 text-sm transition hover:border-ifood/30 hover:bg-ifood-soft/30"
+                    >
+                      <span className="font-extrabold">
+                        #{item.rank} {item.restaurant.name}
+                      </span>
+                      <span className="text-muted">
+                        {" "}
+                        · {item.cuisine ?? item.reason_label} ·{" "}
+                        {priceRangeLabel(item.restaurant.price_range)}
+                      </span>
+                      {slots.length > 0 && (
+                        <p className="mt-1 text-[11px] font-semibold text-[var(--ifdl-color-success)]">
+                          Mesas livres: {slots.join(" · ")}
                         </p>
                       )}
-                  </Link>
+                      {typeof item.promo_discount_pct === "number" &&
+                        item.promo_discount_pct > 0 && (
+                          <p className="text-[11px] font-semibold text-ifood">
+                            {item.promo_discount_pct}% de desconto no salão
+                          </p>
+                        )}
+                    </Link>
+                  </li>
+                );
+              })}
+              {!result.items.length && (
+                <li className="text-sm text-muted">
+                  Nenhum restaurante com mesa livre neste momento.
                 </li>
-              );
-            })}
-            {!result.items.length && (
-              <li className="text-sm text-muted">
-                Nenhum restaurante com mesa livre neste momento.
-              </li>
-            )}
-          </ul>
+              )}
+            </ul>
+          )}
         </div>
       )}
     </section>

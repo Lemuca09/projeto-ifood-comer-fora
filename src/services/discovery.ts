@@ -6,7 +6,11 @@ import { secureLog } from "@/guardrails/secureLog";
 import { findEligibleRestaurants } from "@/services/catalog";
 import { trackEvent } from "@/services/analytics";
 import { PROMPT_VERSION, rankWithAiOrFallback } from "@/ai/recommendation";
-import { generateDineConciergeAnswer } from "@/ai/dineConcierge";
+import {
+  CONCIERGE_PROMPT_VERSION,
+  generateDineConciergeAnswer,
+  type GroundRestaurant,
+} from "@/ai/dineConcierge";
 import { runConciergePreLlm } from "@/guardrails/conciergePreLlm";
 import { inferCuisine } from "@/domain/dineOut/menu";
 import type { DiscoveryInput } from "@/validations/discovery";
@@ -40,7 +44,7 @@ export async function runDiscovery(
     };
   }
 
-  const forceFallback =
+  let forceFallback =
     guard.decisao === "degradar" ||
     opts?.forceFallback === true ||
     input.skipAi === true;
@@ -49,7 +53,7 @@ export async function runDiscovery(
     .from("discovery_requests")
     .insert({
       user_id: userId,
-      occasion: input.occasion,
+      occasion: guard.textoSeguro,
       neighborhood: input.neighborhood,
       party_size: input.partySize,
       preferred_price_range: input.preferredPriceRange ?? null,
@@ -90,19 +94,24 @@ export async function runDiscovery(
       versao: "inputGuard.v1+conciergePreLlm",
       sessionId: userId,
     });
-    if (pre.entities.neighborhood) {
-      effectiveNeighborhood = pre.entities.neighborhood;
-    }
-    if (pre.entities.partySize) {
-      effectivePartySize = pre.entities.partySize;
-    }
-    if (!preferredPriceRange && pre.entities.priceHint) {
-      preferredPriceRange =
-        pre.entities.priceHint === "baixo"
-          ? 1
-          : pre.entities.priceHint === "alto"
-            ? 4
-            : 2;
+    // Bloqueio/degradação: sem LLM e sem confiar em entidades extraídas do ataque.
+    if (pre.guard.decisao === "bloquear" || pre.guard.decisao === "degradar") {
+      forceFallback = true;
+    } else {
+      if (pre.entities.neighborhood) {
+        effectiveNeighborhood = pre.entities.neighborhood;
+      }
+      if (pre.entities.partySize) {
+        effectivePartySize = pre.entities.partySize;
+      }
+      if (!preferredPriceRange && pre.entities.priceHint) {
+        preferredPriceRange =
+          pre.entities.priceHint === "baixo"
+            ? 1
+            : pre.entities.priceHint === "alto"
+              ? 4
+              : 2;
+      }
     }
   }
 
@@ -149,11 +158,14 @@ export async function runDiscovery(
         forceFallback,
       });
 
+  // Concierge: Claude é o caminho principal. Local só se a chamada falhar.
+  // Budget/forceFallback do ranking NÃO short-circuita o Claude aqui
+  // (exceto skipAi explícito).
   const concierge = conversational
     ? await generateDineConciergeAnswer({
         candidates: eligible,
         input: effectiveInput,
-        forceFallback,
+        forceFallback: input.skipAi === true,
       })
     : null;
 
@@ -165,6 +177,18 @@ export async function runDiscovery(
       versao: "conciergePreLlm.v1",
       sessionId: userId,
     });
+    return {
+      discoveryId: discovery.id,
+      recommendationId: "",
+      isFallback: true,
+      blocked: true,
+      answer: concierge.answer,
+      answerIsFallback: true,
+      userIntent: concierge.userIntent,
+      intentLabel: concierge.intentLabel,
+      nowLocal: concierge.nowLocal,
+      items: [],
+    };
   }
 
   if (ranked?.outputGuardReason) {
@@ -188,7 +212,7 @@ export async function runDiscovery(
     versao: conversational
       ? isFallback
         ? undefined
-        : "dine-concierge.v2"
+        : CONCIERGE_PROMPT_VERSION
       : isFallback
         ? undefined
         : PROMPT_VERSION,
@@ -197,14 +221,20 @@ export async function runDiscovery(
   });
 
   const byId = new Map(eligible.map((e) => [e.id, e]));
-  const groundById = new Map(
-    (concierge?.ground ?? []).map((g) => [g.id, g]),
+  const groundById = new Map<string, GroundRestaurant>(
+    (concierge?.ground ?? []).map((g: GroundRestaurant) => [g.id, g]),
   );
 
-  let rankedItems = ranked?.items ?? [];
+  type RankedItem = {
+    restaurant_id: string;
+    reason_code: ReasonCode;
+    rank: number;
+  };
+
+  let rankedItems: RankedItem[] = ranked?.items ?? [];
   if (conversational && concierge) {
     rankedItems = concierge.orderedIds
-      .map((id, idx) => {
+      .map((id: string, idx: number): RankedItem | null => {
         if (!byId.has(id)) return null;
         const g = groundById.get(id);
         const reason_code: ReasonCode = g?.matchCulinaria
@@ -218,11 +248,7 @@ export async function runDiscovery(
           rank: idx + 1,
         };
       })
-      .filter(Boolean) as Array<{
-      restaurant_id: string;
-      reason_code: ReasonCode;
-      rank: number;
-    }>;
+      .filter((item): item is RankedItem => item !== null);
   }
 
   const { data: rec, error: rErr } = await admin
@@ -237,7 +263,7 @@ export async function runDiscovery(
       prompt_version: isFallback
         ? null
         : conversational
-          ? "dine-concierge.v1"
+          ? CONCIERGE_PROMPT_VERSION
           : PROMPT_VERSION,
       is_fallback: isFallback,
     })
@@ -311,6 +337,9 @@ export async function runDiscovery(
     isFallback,
     answer: concierge?.answer,
     answerIsFallback: concierge?.isFallback,
+    userIntent: concierge?.userIntent,
+    intentLabel: concierge?.intentLabel,
+    aiFailReason: concierge?.aiFailReason,
     nowLocal: concierge?.nowLocal,
     items,
   };

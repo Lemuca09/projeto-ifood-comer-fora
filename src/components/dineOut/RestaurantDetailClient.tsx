@@ -316,10 +316,14 @@ export function RestaurantDetailClient({ restaurant, initialTab }: Props) {
               </li>
               {typeof restaurant.idle_capacity_pct === "number" && (
                 <li>
-                  · Ociosidade típica:{" "}
+                  · Ociosidade (slots):{" "}
                   <strong className="text-ink">
                     {Math.round(restaurant.idle_capacity_pct)}%
                   </strong>
+                  <span className="text-muted">
+                    {" "}
+                    - média das mesas livres vs capacidade
+                  </span>
                 </li>
               )}
               {restaurant.occasion_tags?.length > 0 && (

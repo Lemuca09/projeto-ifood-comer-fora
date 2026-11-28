@@ -1,3 +1,4 @@
+import { createHmac } from "crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 /** Log allowlist - nunca texto bruto, prompt, canary, segredo, cookie, IP. */
@@ -11,6 +12,14 @@ export type SecureLogEntry = {
   sessionId?: string;
 };
 
+function sessionHmac(sessionId: string): string {
+  const secret =
+    process.env.RATE_LIMIT_HMAC_SECRET ??
+    process.env.SUPABASE_SECRET_KEY ??
+    "dev";
+  return createHmac("sha256", secret).update(`session:${sessionId}`).digest("hex").slice(0, 32);
+}
+
 export async function secureLog(
   admin: SupabaseClient,
   entry: SecureLogEntry,
@@ -22,9 +31,7 @@ export async function secureLog(
     score: entry.score ?? null,
     versao: entry.versao ?? null,
     latencia_ms: entry.latenciaMs ?? null,
-    session_hmac: entry.sessionId
-      ? entry.sessionId.replace(/./g, "x").slice(0, 8) + entry.sessionId.slice(-4)
-      : null,
+    session_hmac: entry.sessionId ? sessionHmac(entry.sessionId) : null,
   });
   if (error) {
     console.error("secureLog failed", error.code);

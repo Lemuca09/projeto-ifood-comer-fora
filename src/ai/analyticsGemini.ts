@@ -1,44 +1,91 @@
 import { z } from "zod";
-import { callClaudeText, consumeClaudeFailReason } from "@/ai/claudeClient";
+import {
+  callClaudeText,
+  consumeClaudeFailReason,
+  unwrapJsonText,
+} from "@/ai/claudeClient";
 import { CLAUDE_MODEL_FAST } from "@/ai/model";
 import { ABUSE_LIMITS } from "@/guardrails/config";
+import { rawModelTextSafe } from "@/guardrails/textSafety";
 import { notificationCopy } from "@/lib/benefitCopy";
 import { executiveBriefLocal } from "@/lib/executiveBriefLocal";
 import type { DashboardPayload, EnrichedUser } from "@/services/analyticsEngine";
 
-const executiveSchema = z
-  .object({
-    headline: z.string(),
-    lucroReal: z.string(),
-    canibalizacao: z.string(),
-    proximoPasso: z.string(),
-  })
-  .strict();
+function getCanary(): string {
+  return process.env.LLM_CANARY ?? "";
+}
 
-const campaignSchema = z
-  .object({
-    beneficio: z.string(),
-    horarioIdeal: z.string(),
-    publicoAlvo: z.string(),
-    projecaoReceitaPct: z.number(),
-    roteiro: z.string(),
-  })
-  .strict();
+function acceptModelJson(raw: string): boolean {
+  return rawModelTextSafe({ rawText: raw, canary: getCanary() }).ok;
+}
 
-const sentimentSchema = z
-  .object({
-    sentimento: z.enum(["positivo", "neutro", "negativo"]),
-    motivo: z.enum(["preco", "demora", "qualidade", "nenhum"]),
-    gatilhoWinback: z.string(),
-  })
-  .strict();
+const asString = z.union([z.string(), z.number(), z.boolean()]).transform(String);
 
-const userCopySchema = z
-  .object({
-    diagnostico: z.string(),
-    pushCopy: z.string(),
-  })
-  .strict();
+const executiveSchema = z.object({
+  headline: asString,
+  lucroReal: asString,
+  canibalizacao: asString,
+  proximoPasso: asString,
+});
+
+const campaignSchema = z.object({
+  beneficio: asString,
+  horarioIdeal: asString,
+  publicoAlvo: asString,
+  projecaoReceitaPct: z.coerce.number(),
+  roteiro: asString,
+});
+
+const sentimentSchema = z.object({
+  sentimento: z.enum(["positivo", "neutro", "negativo"]),
+  motivo: z.enum(["preco", "demora", "qualidade", "nenhum"]),
+  gatilhoWinback: asString,
+});
+
+const userCopySchema = z.object({
+  diagnostico: asString,
+  pushCopy: asString,
+});
+
+/** Extrai e faz parse de objeto JSON (fences, texto extra, chaves alternativas). */
+function parseJsonObject(raw: string): Record<string, unknown> | null {
+  const unwrapped = unwrapJsonText(raw);
+  try {
+    const v = JSON.parse(unwrapped);
+    if (v && typeof v === "object" && !Array.isArray(v)) {
+      return v as Record<string, unknown>;
+    }
+  } catch {
+    /* tenta reparo leve abaixo */
+  }
+  // Fecha aspas/chaves cortadas pelo teto de tokens.
+  let repaired = unwrapped.trim();
+  if (!repaired.endsWith("}")) {
+    const quoteCount = (repaired.match(/"/g) ?? []).length;
+    if (quoteCount % 2 === 1) repaired += '"';
+    repaired += "}";
+  }
+  try {
+    const v = JSON.parse(repaired);
+    if (v && typeof v === "object" && !Array.isArray(v)) {
+      return v as Record<string, unknown>;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function normalizeExecutiveKeys(
+  obj: Record<string, unknown>,
+): Record<string, unknown> {
+  return {
+    headline: obj.headline ?? obj.titulo ?? obj.title,
+    lucroReal: obj.lucroReal ?? obj.lucro_real ?? obj.lucro,
+    canibalizacao: obj.canibalizacao ?? obj.canibalização ?? obj.risk,
+    proximoPasso: obj.proximoPasso ?? obj.proximo_passo ?? obj.nextStep,
+  };
+}
 
 async function callClaudeJson(
   prompt: string,
@@ -46,9 +93,11 @@ async function callClaudeJson(
   maxTokens: number,
 ): Promise<string | null> {
   return callClaudeText({
+    system:
+      "Responda SOMENTE com um único objeto JSON válido. Sem markdown, sem texto fora do JSON.",
     user: prompt,
     cacheParts,
-    temperature: 0.2,
+    temperature: 0.1,
     maxTokens,
     model: CLAUDE_MODEL_FAST,
   });
@@ -74,9 +123,9 @@ export async function executiveBrief(
   }));
 
   const text = await callClaudeJson(
-    `Analista Comer Fora. JSON keys: headline,lucroReal,canibalizacao,proximoPasso (pt-BR, ≤18 palavras cada). Escolha eficiente cupom|giftback|prato|nenhum - não diga "só giftback".
+    `Analista Comer Fora. Devolva JSON com exatamente estas chaves string: headline, lucroReal, canibalizacao, proximoPasso (pt-BR, ≤18 palavras cada). Escolha eficiente cupom|giftback|prato|nenhum - não diga "só giftback".
 d:{gmvΔ:${dash.kpis.gmvDeltaPct},roi:${dash.kpis.roi},lift:${dash.kpis.liftVsControl},mix:${JSON.stringify(mix)},cl:${JSON.stringify(clusters)},β:${JSON.stringify(top)}}`,
-    ["executive", dash.seed, dash.kpis.roi, mix.cupom, mix.giftback],
+    ["executive.v2", dash.seed, dash.kpis.roi, mix.cupom, mix.giftback],
     ABUSE_LIMITS.maxOutputTokensAnalytics,
   );
   if (!text) {
@@ -85,13 +134,14 @@ d:{gmvΔ:${dash.kpis.gmvDeltaPct},roi:${dash.kpis.roi},lift:${dash.kpis.liftVsCo
       consumeClaudeFailReason() ?? "claude_empty_or_auth",
     );
   }
-  try {
-    const parsed = executiveSchema.safeParse(JSON.parse(text));
-    if (!parsed.success) return executiveBriefLocal(dash, "claude_parse");
-    return { ...parsed.data, isFallback: false as const };
-  } catch {
-    return executiveBriefLocal(dash, "claude_parse");
+  if (!acceptModelJson(text)) {
+    return executiveBriefLocal(dash, "output_guard");
   }
+  const obj = parseJsonObject(text);
+  if (!obj) return executiveBriefLocal(dash, "claude_parse");
+  const parsed = executiveSchema.safeParse(normalizeExecutiveKeys(obj));
+  if (!parsed.success) return executiveBriefLocal(dash, "claude_parse");
+  return { ...parsed.data, isFallback: false as const };
 }
 
 export async function restaurantCampaignPlan(
@@ -159,13 +209,12 @@ season:${JSON.stringify(seasonMini)} ref:${JSON.stringify(compactLocal)} mix:${J
     ABUSE_LIMITS.maxOutputTokensAnalytics,
   );
   if (!text) return fallback;
-  try {
-    const parsed = campaignSchema.safeParse(JSON.parse(text));
-    if (!parsed.success) return fallback;
-    return { ...parsed.data, isFallback: false as const };
-  } catch {
-    return fallback;
-  }
+  if (!acceptModelJson(text)) return fallback;
+  const obj = parseJsonObject(text);
+  if (!obj) return fallback;
+  const parsed = campaignSchema.safeParse(obj);
+  if (!parsed.success) return fallback;
+  return { ...parsed.data, isFallback: false as const };
 }
 
 export async function enrichSentiment(
@@ -184,18 +233,17 @@ export async function enrichSentiment(
   const snippet = reviewText.slice(0, 160);
   const text = await callClaudeJson(
     `JSON: sentimento(positivo|neutro|negativo),motivo(preco|demora|qualidade|nenhum),gatilhoWinback(≤12 palavras).
-txt:${JSON.stringify(snippet)}`,
+NAO_CONFIAVEL:{"review":${JSON.stringify(snippet)}}`,
     ["sentiment", snippet.slice(0, 80)],
     ABUSE_LIMITS.maxOutputTokensTiny,
   );
   if (!text) return fallback;
-  try {
-    const parsed = sentimentSchema.safeParse(JSON.parse(text));
-    if (!parsed.success) return fallback;
-    return { ...parsed.data, isFallback: false as const };
-  } catch {
-    return fallback;
-  }
+  if (!acceptModelJson(text)) return fallback;
+  const obj = parseJsonObject(text);
+  if (!obj) return fallback;
+  const parsed = sentimentSchema.safeParse(obj);
+  if (!parsed.success) return fallback;
+  return { ...parsed.data, isFallback: false as const };
 }
 
 export async function userIndividualCopy(
@@ -239,11 +287,10 @@ d:${JSON.stringify({
     ABUSE_LIMITS.maxOutputTokensAnalytics,
   );
   if (!text) return fallback;
-  try {
-    const parsed = userCopySchema.safeParse(JSON.parse(text));
-    if (!parsed.success) return fallback;
-    return { ...parsed.data, isFallback: false as const };
-  } catch {
-    return fallback;
-  }
+  if (!acceptModelJson(text)) return fallback;
+  const obj = parseJsonObject(text);
+  if (!obj) return fallback;
+  const parsed = userCopySchema.safeParse(obj);
+  if (!parsed.success) return fallback;
+  return { ...parsed.data, isFallback: false as const };
 }

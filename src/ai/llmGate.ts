@@ -2,11 +2,11 @@ import { createHash } from "crypto";
 
 /** Cache longo + throttle - prioriza reuso e corta RPM. */
 const CACHE_TTL_MS = 60 * 60 * 1000;
-const MIN_INTERVAL_MS = 6_000;
+const MIN_INTERVAL_MS = 2_500;
 const cache = new Map<string, { at: number; value: string }>();
 let lastCallAt = 0;
 let inFlight = 0;
-const MAX_IN_FLIGHT = 1;
+const MAX_IN_FLIGHT = 2;
 
 export function llmCacheKey(parts: unknown[]): string {
   return createHash("sha256")
@@ -35,16 +35,27 @@ export function setLlmCache(key: string, value: string) {
   }
 }
 
+/**
+ * Aguarda slot em vez de descartar a chamada (antes: null silencioso → fallback local).
+ */
 export async function withLlmThrottle<T>(
   fn: () => Promise<T>,
 ): Promise<T | null> {
+  const deadline = Date.now() + 12_000;
+  while (inFlight >= MAX_IN_FLIGHT) {
+    if (Date.now() >= deadline) return null;
+    await new Promise((r) => setTimeout(r, 200));
+  }
+
   const wait = MIN_INTERVAL_MS - (Date.now() - lastCallAt);
   if (wait > 0) {
     await new Promise((r) => setTimeout(r, wait));
   }
+
   if (inFlight >= MAX_IN_FLIGHT) {
     return null;
   }
+
   inFlight += 1;
   lastCallAt = Date.now();
   try {

@@ -20,7 +20,11 @@ export function inferCuisine(
   description?: string | null,
 ): string {
   const n = `${restaurantName} ${description ?? ""}`.toLowerCase();
-  if (/lamen|ramen|lám|l[aá]men|sushi|nikkei|temaki|japon|yakisoba/.test(n)) {
+  if (
+    /lamen|ramen|lám|l[aá]men|sushi|sashimi|nikkei|temaki|japon|yakisoba|missoshiro|tempu?ra/.test(
+      n,
+    )
+  ) {
     return "Japonesa";
   }
   if (/burger|smash|hamb/.test(n)) return "Hambúrguer";

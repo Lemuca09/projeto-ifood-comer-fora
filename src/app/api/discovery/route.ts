@@ -61,7 +61,9 @@ export async function POST(request: Request) {
       });
     }
 
-    if (result.blocked) {
+    // Ocasião bloqueada sem resposta conversacional → 400.
+    // Concierge fora de escopo → 200 com blocked + mensagem (sem cards / sem LLM).
+    if (result.blocked && !result.answer) {
       return NextResponse.json(
         { error: "Pedido não pôde ser processado. Tente outra ocasião.", blocked: true },
         { status: 400 },

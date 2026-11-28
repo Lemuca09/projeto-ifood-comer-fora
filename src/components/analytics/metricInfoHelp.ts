@@ -107,7 +107,7 @@ export const M = {
   idleCapacity: {
     name: "idle_capacity_pct",
     detail:
-      "Ociosidade do salão. Preferência: valor do restaurante no Supabase; se ausente, 28–73% via seed.",
+      "Ociosidade do salão (%). Derivada dos restaurant_slots (capacity − reserved): segunda quase vazia, fim de semana cheio, ajustada por salário/feriado. Fallback sintético 28–73% se sem slot.",
   },
   lowDemandDelta: {
     name: "lowDemandDeltaPct",

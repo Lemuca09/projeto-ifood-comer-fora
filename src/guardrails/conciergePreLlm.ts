@@ -31,10 +31,29 @@ const CUISINES = [
 ] as const;
 
 const IN_SCOPE =
-  /\b(jantar|almo[cç]ar|comer|restaurante|mesa|reserva|sal[aã]o|comer\s+fora|onde\s+(jantar|comer)|culin[aá]ria|comida|bairro|grupo|pessoas|barato|caro|promo|cupom|giftback|prato)\b/i;
+  /\b(jantar|almo[cç]ar|comer|restaurante|mesa|reserva|sal[aã]o|comer\s+fora|onde\s+(jantar|comer|acho|fica|encontrar)|culin[aá]ria|comida|bairro|grupo|pessoas|barato|caro|premium|promo|cupom|giftback|prato|pert[oa]|pr[oó]xim|dist[aâ]ncia|faixa\s+de\s+pre[cç]o)\b/i;
+
+export type ConciergeIntent =
+  | "proximity"
+  | "cuisine"
+  | "benefit"
+  | "time"
+  | "price_high"
+  | "price_low"
+  | "general";
+
+export const CONCIERGE_INTENT_LABELS: Record<ConciergeIntent, string> = {
+  proximity: "lugar mais perto / à mão",
+  cuisine: "culinária pedida",
+  benefit: "benefício / promo",
+  time: "horário",
+  price_high: "restaurante mais caro / premium",
+  price_low: "restaurante mais barato / econômico",
+  general: "sugestão geral para jantar",
+};
 
 const OUT_OF_SCOPE =
-  /\b(bitcoin|crypto|elei[cç][aã]o|pol[ií]tica|escreva\s+c[oó]digo|python|javascript|hacke|senha|password|api\s+key|weapon|bomba)\b/i;
+  /\b(bitcoin|crypto|elei[cç][aã]o|pol[ií]tica|escreva\s+c[oó]digo|python|javascript|hacke|senha|password|api\s+key|weapon|bomba|matar|te\s+mato|assassina|kill\s+you)\b/i;
 
 export type ConciergeEntities = {
   cuisine?: string;
@@ -42,6 +61,10 @@ export type ConciergeEntities = {
   neighborhood?: (typeof NEIGHBORHOODS)[number];
   partySize?: number;
   priceHint?: "baixo" | "medio" | "alto";
+  /** Pediu proximidade (“perto de mim”) — pode coexistir com culinária. */
+  wantsProximity: boolean;
+  /** Intenção dominante da pergunta (ranking + prosa). */
+  intent: ConciergeIntent;
   intentInScope: boolean;
 };
 
@@ -57,7 +80,7 @@ export type PreLlmResult = {
 };
 
 export const SAFE_REDIRECT_ANSWER =
-  "Posso te ajudar a escolher onde jantar agora. Me diga o tipo de comida, o horário ou o bairro - mostro opções com mesa disponível e benefícios reais da sua conta.";
+  "Não posso te ajudar com esse pedido. Para eu indicar um lugar no Comer Fora, escreva sobre comida, bairro, horário ou proximidade - por exemplo: “italiana no Gonzaga às 20h”, “almoço perto de mim” ou “onde jantar com cupom”.";
 
 function extractEntities(text: string): ConciergeEntities {
   const lower = text.toLowerCase();
@@ -81,18 +104,55 @@ function extractEntities(text: string): ConciergeEntities {
     if (n >= 1 && n <= 20) partySize = n;
   }
   let priceHint: ConciergeEntities["priceHint"];
-  if (/barat|econ[oô]mic|custo.?benef/i.test(text)) priceHint = "baixo";
-  else if (/caro|premium|sofistic/i.test(text)) priceHint = "alto";
-  else if (/m[eé]dio|razo[aá]vel/i.test(text)) priceHint = "medio";
+  if (/mais\s+barat|baratinho|econ[oô]mic|custo.?benef|mais\s+em\s+conta/i.test(text)) {
+    priceHint = "baixo";
+  } else if (
+    /mais\s+caro|car[ií]ssimo|premium|sofistic|alto\s+padr[aã]o|faixa\s+alta/i.test(
+      text,
+    )
+  ) {
+    priceHint = "alto";
+  } else if (/m[eé]dio|razo[aá]vel/i.test(text)) {
+    priceHint = "medio";
+  }
 
-  const intentInScope =
-    !OUT_OF_SCOPE.test(text) &&
-    (IN_SCOPE.test(text) ||
-      !!cuisine ||
-      !!hour ||
-      !!neighborhood ||
-      !!partySize ||
-      text.trim().length < 12);
+  const wantsProximity =
+    /\b(mais\s+pert[oa]|mais\s+pr[oó]xim[oa]|pert[oa]\s+de\s+mim|pertinho|pr[oó]xim[oa]s?|dist[aâ]ncia|onde\s+(acho|fica|encontrar)|agora)\b/i.test(
+      text,
+    );
+
+  // Prioridade: preço explícito > culinária pedida > proximidade > benefício > horário.
+  // “japonesa mais perto” NÃO pode virar só proximity (bug do demo).
+  let intent: ConciergeIntent = "general";
+  if (priceHint === "alto") {
+    intent = "price_high";
+  } else if (priceHint === "baixo") {
+    intent = "price_low";
+  } else if (cuisine) {
+    intent = "cuisine";
+  } else if (wantsProximity) {
+    intent = "proximity";
+  } else if (
+    /\b(cupom|giftback|desconto|promo(c|ç)[aã]o|prato\s+gr[aá]tis|benef[ií]cio)\b/i.test(
+      text,
+    )
+  ) {
+    intent = "benefit";
+  } else if (hour) {
+    intent = "time";
+  }
+
+  // Frases curtas sem sinal de jantar NÃO entram no escopo (evita “ok”, ameaças curtas, etc.).
+  const diningSignal =
+    IN_SCOPE.test(text) ||
+    !!cuisine ||
+    !!hour ||
+    !!neighborhood ||
+    !!partySize ||
+    wantsProximity ||
+    intent === "price_high" ||
+    intent === "price_low";
+  const intentInScope = !OUT_OF_SCOPE.test(text) && diningSignal;
 
   return {
     cuisine,
@@ -100,6 +160,8 @@ function extractEntities(text: string): ConciergeEntities {
     neighborhood,
     partySize,
     priceHint,
+    wantsProximity,
+    intent,
     intentInScope,
   };
 }
@@ -113,7 +175,7 @@ export function runConciergePreLlm(rawQuery: string | undefined | null): PreLlmR
   const entities = extractEntities(guard.textoSeguro);
   const ruleIds = [...guard.ruleIds];
 
-  if (!entities.intentInScope && guard.textoSeguro.length >= 12) {
+  if (!entities.intentInScope && guard.textoSeguro.trim().length > 0) {
     ruleIds.push("out_of_scope");
   }
 

@@ -28,7 +28,11 @@ const RULES: Array<{ id: string; re: RegExp; score: number }> = [
   { id: "leetspeak_jail", re: /1gn0r[e3].{0,20}1nstru/i, score: 40 },
   { id: "many_shot", re: /(?:user:|assistant:)(?:[\s\S]*?(?:user:|assistant:)){5,}/i, score: 40 },
   { id: "inverted_hint", re: /texto\s+invertido|reverse\s+the\s+prompt/i, score: 40 },
-  { id: "toxicity", re: /\b(mate|assassine|ódio\s+racial|hate\s+speech|nazista)\b/i, score: 70 },
+  {
+    id: "toxicity",
+    re: /\b(matar|mate|te\s+mato|vou\s+te\s+matar|assassina|assassine|ódio\s+racial|hate\s+speech|nazista|kill\s+(you|myself)|i'?ll\s+kill)\b/i,
+    score: 70,
+  },
 ];
 
 /** Pares confundíveis comuns (homóglifos) → ASCII. */
